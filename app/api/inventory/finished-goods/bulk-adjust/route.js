@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
@@ -83,3 +85,4 @@ export async function POST(request) {
     return NextResponse.json({ error: error.message || "Failed to bulk adjust inventory" }, { status: 500 })
   }
 }
+

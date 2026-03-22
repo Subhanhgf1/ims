@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
 import { prisma } from "../../../../lib/prisma"
 import bcrypt from "bcryptjs"
@@ -53,3 +55,4 @@ if (!isValidPassword) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+

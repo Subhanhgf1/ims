@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { generateReceiptNumber } from "@/lib/utils"
@@ -89,3 +91,4 @@ export async function POST(request) {
     return NextResponse.json({ error: "Failed to create inbound receipt" }, { status: 500 })
   }
 }
+

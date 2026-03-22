@@ -9,6 +9,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    fetchCache: 'force-no-store',
+  },
 }
 
 export default nextConfig

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
@@ -112,3 +114,4 @@ const base = {
     return NextResponse.json({ error: "Failed to create sales order" }, { status: 500 })
   }
 }
+

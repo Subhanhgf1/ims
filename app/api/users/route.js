@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
@@ -68,3 +70,4 @@ export async function POST(request) {
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
   }
 }
+

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
@@ -122,3 +124,4 @@ Promise.all([
     return NextResponse.json({ error: "Failed to fetch dashboard stats" }, { status: 500 })
   }
 }
+
