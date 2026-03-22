@@ -15,7 +15,7 @@ import {
   Plus, Package, Search, Edit, Trash2, ImageIcon, Settings,
   Filter, X, ChevronDown, PencilLine, Tags, MapPin,
   Truck, AlertTriangle, CheckCircle2, XCircle, Download,
-  Copy, Archive,
+  Copy, Archive, Loader2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import AdvancedInventoryModal from "./advanced-inventory-modal"
@@ -33,25 +33,12 @@ const BULK_ACTIONS = [
     group: "Edit",
     actions: [
       { id: "bulk-edit",    label: "Edit Selected",       icon: PencilLine,    variant: "default" },
-      // { id: "bulk-status",  label: "Change Status",       icon: Tags,          variant: "default" },
-      // { id: "bulk-location",label: "Reassign Location",   icon: MapPin,        variant: "default" },
-      // { id: "bulk-supplier",label: "Reassign Supplier",   icon: Truck,         variant: "default" },
     ],
   },
-  // {
-  //   group: "Mark As",
-  //   actions: [
-  //     { id: "mark-in-stock",   label: "Mark In-Stock",     icon: CheckCircle2, variant: "success" },
-  //     { id: "mark-low-stock",  label: "Mark Low-Stock",    icon: AlertTriangle, variant: "warning" },
-  //     { id: "mark-out",        label: "Mark Out of Stock", icon: XCircle,       variant: "destructive" },
-  //   ],
-  // },
   {
     group: "Data",
     actions: [
       { id: "export",   label: "Export to CSV",    icon: Download, variant: "default" },
-      // { id: "duplicate",label: "Duplicate Items",  icon: Copy,     variant: "default" },
-      // { id: "archive",  label: "Archive Items",    icon: Archive,  variant: "default" },
     ],
   },
   {
@@ -63,11 +50,10 @@ const BULK_ACTIONS = [
 ]
 
 // ─── Bulk Actions Dropdown Component ────────────────────────────────────────
-function BulkActionsDropdown({ count, onAction, disabled }) {
+function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
-  // Close on outside click
   useEffect(() => {
     function handle(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false)
@@ -90,15 +76,21 @@ function BulkActionsDropdown({ count, onAction, disabled }) {
     destructive:  "text-red-500",
   }
 
+  const isLoading = !!loadingAction
+
   return (
     <div className="relative" ref={ref}>
       <Button
         variant="outline"
-        disabled={disabled}
+        disabled={disabled || isLoading}
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 font-medium transition-all duration-150 border-primary/30 hover:border-primary/60 hover:bg-primary/5"
       >
-        <Settings className="h-4 w-4" />
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Settings className="h-4 w-4" />
+        )}
         <span>Actions</span>
         {count > 0 && (
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">
@@ -130,17 +122,25 @@ function BulkActionsDropdown({ count, onAction, disabled }) {
                 <p className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest">
                   {group.group}
                 </p>
-                {group.actions.map(({ id, label, icon: Icon, variant }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => { onAction(id); setOpen(false) }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-100 ${variantStyles[variant]}`}
-                  >
-                    <Icon className={`h-4 w-4 flex-shrink-0 ${iconStyles[variant]}`} />
-                    <span>{label}</span>
-                  </button>
-                ))}
+                {group.actions.map(({ id, label, icon: Icon, variant }) => {
+                  const actionLoading = loadingAction === id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => { onAction(id); setOpen(false) }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-100 disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]}`}
+                    >
+                      {actionLoading ? (
+                        <Loader2 className={`h-4 w-4 flex-shrink-0 animate-spin ${iconStyles[variant]}`} />
+                      ) : (
+                        <Icon className={`h-4 w-4 flex-shrink-0 ${iconStyles[variant]}`} />
+                      )}
+                      <span>{actionLoading ? "Processing…" : label}</span>
+                    </button>
+                  )
+                })}
               </div>
             ))}
           </div>
@@ -169,6 +169,14 @@ export default function Inventory() {
   const [selectedItems, setSelectedItems] = useState([])
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false)
   const [selectAll, setSelectAll] = useState(false)
+
+  // ─── Loading States ───────────────────────────────────────────────────────
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deletingItemId, setDeletingItemId] = useState(null)   // id of single item being deleted
+  const [loadingAdvancedId, setLoadingAdvancedId] = useState(null) // id of item opening advanced modal
+  const [loadingEditId, setLoadingEditId] = useState(null)     // id of item opening edit dialog
+  const [bulkLoadingAction, setBulkLoadingAction] = useState(null) // bulk action in progress
+
   const { toast } = useToast()
 
   const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "")
@@ -224,6 +232,7 @@ export default function Inventory() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsSubmitting(true)
     try {
       const url = editingItem ? `/api/inventory/${activeTab}/${editingItem.id}` : `/api/inventory/${activeTab}`
       const method = editingItem ? "PUT" : "POST"
@@ -243,11 +252,14 @@ export default function Inventory() {
       fetchData()
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this item?")) return
+    setDeletingItemId(id)
     try {
       const response = await fetch(`/api/inventory/${activeTab}/${id}`, { method: "DELETE" })
       if (!response.ok) throw new Error("Failed to delete item")
@@ -255,6 +267,8 @@ export default function Inventory() {
       fetchData()
     } catch (error) {
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" })
+    } finally {
+      setDeletingItemId(null)
     }
   }
 
@@ -264,6 +278,7 @@ export default function Inventory() {
   }
 
   const openEditDialog = (item) => {
+    setLoadingEditId(item.id)
     setEditingItem(item)
     setFormData({
       name: item.name || "", sku: item.sku || "", description: item.description || "",
@@ -272,9 +287,16 @@ export default function Inventory() {
       locationId: item.locationId || "", imageUrl: item.imageUrl || "",
     })
     setIsAddDialogOpen(true)
+    // Brief delay to show spinner, then clear
+    setTimeout(() => setLoadingEditId(null), 300)
   }
 
-  const openAdvancedModal = (item) => { setSelectedItem(item); setIsAdvancedModalOpen(true) }
+  const openAdvancedModal = (item) => {
+    setLoadingAdvancedId(item.id)
+    setSelectedItem(item)
+    setIsAdvancedModalOpen(true)
+    setTimeout(() => setLoadingAdvancedId(null), 300)
+  }
 
   const getStatusBadge = (item) => {
     if (item.quantity <= 0) return <Badge variant="destructive">Out of Stock</Badge>
@@ -323,37 +345,36 @@ export default function Inventory() {
 
   const handleSelectAll = () => setSelectAll(!selectAll)
 
-const handleExportItems = () => {
-  const currentItems = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
-  const itemsToExport = currentItems.filter((item) => selectedItems.includes(item.id))
-  const csvContent = [
-    ["Name", "SKU", "Description", "Unit", "Cost", "Price", "Quantity", "Minimum Stock", "Supplier", "Location"].join(","),
-    ...itemsToExport.map((item) => [
-      `"${item.name}"`,
-      `"${item.sku}"`,
-      `"${item.description || ""}"`,
-      `"${item.unit}"`,
-      item.cost ?? "",
-      item.price ?? "",
-      item.quantity,
-      item.minimumStock ?? "",
-      `"${suppliers.find((s) => s.id === item.supplierId)?.name || ""}"`,
-      `"${locations.find((l) => l.id === item.locationId)?.code || ""}"`,
-    ].join(",")),
-  ].join("\n")
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.setAttribute("href", url)
-  link.setAttribute("download", `${activeTab}-${new Date().toISOString()}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
-
+  const handleExportItems = () => {
+    const currentItems = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
+    const itemsToExport = currentItems.filter((item) => selectedItems.includes(item.id))
+    const csvContent = [
+      ["Name", "SKU", "Description", "Unit", "Cost", "Price", "Quantity", "Minimum Stock", "Supplier", "Location"].join(","),
+      ...itemsToExport.map((item) => [
+        `"${item.name}"`,
+        `"${item.sku}"`,
+        `"${item.description || ""}"`,
+        `"${item.unit}"`,
+        item.cost ?? "",
+        item.price ?? "",
+        item.quantity,
+        item.minimumStock ?? "",
+        `"${suppliers.find((s) => s.id === item.supplierId)?.name || ""}"`,
+        `"${locations.find((l) => l.id === item.locationId)?.code || ""}"`,
+      ].join(",")),
+    ].join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", `${activeTab}-${new Date().toISOString()}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   // ─── Bulk Action Handler ─────────────────────────────────────────────────
-  const handleBulkAction = (actionId) => {
+  const handleBulkAction = async (actionId) => {
     const currentItems = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
     const selectedItemsData = currentItems.filter((item) => selectedItems.includes(item.id))
 
@@ -365,36 +386,40 @@ const handleExportItems = () => {
         }
         setIsBulkEditOpen(true)
         break
+
       case "delete":
-        if (confirm(`Delete ${selectedItems.length} item${selectedItems.length !== 1 ? "s" : ""}? This cannot be undone.`)) {
+        if (!confirm(`Delete ${selectedItems.length} item${selectedItems.length !== 1 ? "s" : ""}? This cannot be undone.`)) return
+        setBulkLoadingAction("delete")
+        try {
           const ids = selectedItemsData.map((item) => item.id)
-          fetch(`/api/inventory/${activeTab}`, {
+          await fetch(`/api/inventory/${activeTab}`, {
             method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ids }),
           })
-          .then(() => {
-            toast({ title: "Deleted", description: `${selectedItems.length} items deleted` })
-            setSelectedItems([])
-            setSelectAll(false)
-            fetchData()
-          }).catch(() => {
-            toast({ title: "Error", description: "Some items could not be deleted", variant: "destructive" })
-          })
+          toast({ title: "Deleted", description: `${selectedItems.length} items deleted` })
+          setSelectedItems([])
+          setSelectAll(false)
+          fetchData()
+        } catch {
+          toast({ title: "Error", description: "Some items could not be deleted", variant: "destructive" })
+        } finally {
+          setBulkLoadingAction(null)
         }
         break
+
       case "export":
-        toast({ title: "Exporting…", description: `Exporting ${selectedItems.length} items to CSV` })
-        handleExportItems()
-        toast({ title: "Exported", description: `${selectedItems.length} items exported to CSV` })
+        setBulkLoadingAction("export")
+        try {
+          // Small async delay to let the spinner render before the synchronous CSV work
+          await new Promise((r) => setTimeout(r, 50))
+          handleExportItems()
+          toast({ title: "Exported", description: `${selectedItems.length} items exported to CSV` })
+        } finally {
+          setBulkLoadingAction(null)
+        }
         break
-      case "mark-in-stock":
-      case "mark-low-stock":
-      case "mark-out":
-        toast({ title: "Status Updated", description: `${selectedItems.length} items marked` })
-        break
+
       default:
         toast({ title: `Action: ${actionId}`, description: `Applied to ${selectedItems.length} items` })
     }
@@ -412,7 +437,8 @@ const handleExportItems = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading inventory...</div>
+        <Loader2 className="h-6 w-6 animate-spin mr-2 text-muted-foreground" />
+        <div className="text-lg text-muted-foreground">Loading inventory...</div>
       </div>
     )
   }
@@ -426,11 +452,11 @@ const handleExportItems = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Inventory Management</h1>
         <div className="flex gap-2 items-center">
-          {/* Bulk Actions Dropdown — only shows when items selected */}
           <BulkActionsDropdown
             count={selectedItems.length}
             onAction={handleBulkAction}
             disabled={selectedItems.length === 0}
+            loadingAction={bulkLoadingAction}
           />
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -514,8 +540,24 @@ const handleExportItems = () => {
                   </div>
                 )}
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit">{editingItem ? "Update" : "Create"}</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isSubmitting}
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {editingItem ? "Updating…" : "Creating…"}
+                      </>
+                    ) : (
+                      editingItem ? "Update" : "Create"
+                    )}
+                  </Button>
                 </div>
               </form>
             </DialogContent>
@@ -653,11 +695,46 @@ const handleExportItems = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openAdvancedModal(item)} title="Advanced Management">
-                        <Settings className="h-4 w-4" />
+                      {/* Advanced Settings Button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={loadingAdvancedId === item.id || deletingItemId === item.id}
+                        onClick={() => openAdvancedModal(item)}
+                        title="Advanced Management"
+                      >
+                        {loadingAdvancedId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Settings className="h-4 w-4" />
+                        )}
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => openEditDialog(item)}><Edit className="h-4 w-4" /></Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                      {/* Edit Button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={loadingEditId === item.id || deletingItemId === item.id}
+                        onClick={() => openEditDialog(item)}
+                      >
+                        {loadingEditId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Edit className="h-4 w-4" />
+                        )}
+                      </Button>
+                      {/* Delete Button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={deletingItemId === item.id}
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        {deletingItemId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -714,11 +791,46 @@ const handleExportItems = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openAdvancedModal(item)} title="Advanced Management">
-                        <Settings className="h-4 w-4" />
+                      {/* Advanced Settings Button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={loadingAdvancedId === item.id || deletingItemId === item.id}
+                        onClick={() => openAdvancedModal(item)}
+                        title="Advanced Management"
+                      >
+                        {loadingAdvancedId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Settings className="h-4 w-4" />
+                        )}
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => openEditDialog(item)}><Edit className="h-4 w-4" /></Button>
-                      <Button size="sm" variant="outline" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4" /></Button>
+                      {/* Edit Button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={loadingEditId === item.id || deletingItemId === item.id}
+                        onClick={() => openEditDialog(item)}
+                      >
+                        {loadingEditId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Edit className="h-4 w-4" />
+                        )}
+                      </Button>
+                      {/* Delete Button */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={deletingItemId === item.id}
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        {deletingItemId === item.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
