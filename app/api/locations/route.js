@@ -19,14 +19,18 @@ export async function GET() {
 export async function POST(request) {
   try {
     const data = await request.json()
-    const { code, zone, type, capacity } = data
+    console.log("Received location data:", data) // Debug log to check incoming data
+    const { name, zone, type, capacity } = data
 
-    if (!code || !zone || !type || !capacity) {
+    if (!name || !zone || !type || !capacity) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
 
+
+    const code = `LOC-${Math.random().toString(36).substr(2, 16).toUpperCase()}`
     const location = await prisma.location.create({
       data: {
+        name,
         code,
         zone,
         type,

@@ -98,12 +98,14 @@ export default function LoginForm() {
             </form>
 
             <div className="mt-6 text-sm text-gray-600">
-              <p className="font-medium">Demo Accounts:</p>
+              {/* <p className="font-medium">Demo Accounts:</p>
               <div className="mt-2 space-y-1">
                 <p>Admin: admin@ims.com / admin123</p>
                 <p>Manager: manager@ims.com / manager123</p>
                 <p>Operator: operator@ims.com / operator123</p>
-              </div>
+              </div> */}
+             
+              New User? <a href="/sign-up" className="font-medium text-blue-600 hover:text-blue-500"> Sign up now</a>
             </div>
           </CardContent>
         </Card>

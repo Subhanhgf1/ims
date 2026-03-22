@@ -617,10 +617,13 @@ export default function Settings() {
             <CardDescription>Manage inventory locations and zones</CardDescription>
           </div>
           {(user.role === "ADMIN" || user.role === "MANAGER") && (
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Location
-            </Button>
+       <Button onClick={() => {
+  setFormData({ code: Math.random().toString(36).substring(2, 16).toUpperCase() })
+  setIsAddDialogOpen(true)
+}}>
+  <Plus className="h-4 w-4 mr-2" />
+  Add Location
+</Button>
           )}
         </div>
       </CardHeader>
@@ -628,6 +631,7 @@ export default function Settings() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Name</TableHead>
               <TableHead>Location Code</TableHead>
               <TableHead>Zone</TableHead>
               <TableHead>Type</TableHead>
@@ -640,6 +644,7 @@ export default function Settings() {
           <TableBody>
             {locations.map((location) => (
               <TableRow key={location.id}>
+                <TableCell className="font-medium">{location.name}</TableCell>
                 <TableCell className="font-medium">{location.code}</TableCell>
                 <TableCell>{location.zone}</TableCell>
                 <TableCell>{location.type}</TableCell>
@@ -980,6 +985,7 @@ export default function Settings() {
   }
 
   const renderDialogContent = () => {
+ 
     switch (activeSection) {
       case "users":
         return (
@@ -1050,59 +1056,72 @@ export default function Settings() {
             )}
           </div>
         )
-      case "locations":
-        return (
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="code">Location Code *</Label>
-                <Input
-                  id="code"
-                  value={formData.code || ""}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value }))}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="zone">Zone *</Label>
-                <Input
-                  id="zone"
-                  value={formData.zone || ""}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, zone: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="type">Type *</Label>
-                <select
-                  id="type"
-                  value={formData.type || ""}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value }))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  required
-                >
-                  <option value="">Select type</option>
-                  <option value="SHELF">Shelf</option>
-                  <option value="PALLET">Pallet</option>
-                  <option value="BIN">Bin</option>
-                  <option value="FLOOR">Floor</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="capacity">Capacity *</Label>
-                <Input
-                  id="capacity"
-                  type="number"
-                  value={formData.capacity || ""}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, capacity: e.target.value }))}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        )
+     case "locations":
+  return (
+    <div className="grid gap-4 py-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Name *</Label>
+          <Input
+            id="name"
+            value={formData.name || ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+            required
+          />
+        </div>
+        {/* <div className="space-y-2">
+          <Label htmlFor="code">Location Code *</Label>
+          <Input
+            id="code"
+            className="opacity-50"
+            value={formData.code || ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value }))}
+            required
+          />
+        </div> */}
+         <div className="space-y-2">
+          <Label htmlFor="zone">Zone *</Label>
+          <Input
+            id="zone"
+            value={formData.zone || ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, zone: e.target.value }))}
+            required
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="type">Type *</Label>
+          <select
+            id="type"
+            value={formData.type || ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value }))}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            required
+          >
+            <option value="">Select type</option>
+            <option value="SHELF">Shelf</option>
+            <option value="ROOM">Room</option>
+          
+            <option value="FLOOR">Floor</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="capacity">Capacity *</Label>
+          <Input
+            id="capacity"
+            type="number"
+            value={formData.capacity || ""}
+            onChange={(e) => setFormData((prev) => ({ ...prev, capacity: e.target.value }))}
+            required
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+       
+      </div>
+    </div>
+  )
       case "suppliers":
         return (
           <div className="grid gap-4 py-4">

@@ -62,6 +62,7 @@ model Customer {
 model Location {
   id                    String                 @id @default(cuid())
   code                  String                 @unique
+  name                  String
   zone                  String
   type                  LocationType
   capacity              Int
@@ -432,6 +433,7 @@ enum CustomerStatus {
 }
 
 enum LocationType {
+  ROOM
   SHELF
   PALLET
   BIN
