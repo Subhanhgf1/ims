@@ -1,0 +1,512 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                       String                @id @default(cuid())
+  email                    String                @unique
+  name                     String
+  password                 String
+  role                     Role                  @default(OPERATOR)
+  status                   UserStatus            @default(ACTIVE)
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  lastLogin                DateTime?
+  createdInboundReceipts   InboundReceipt[]      @relation("CreatedBy")
+  inventoryAdjustments     InventoryAdjustment[]
+  createdOutboundShipments OutboundShipment[]    @relation("CreatedBy")
+  createdPurchaseOrders    PurchaseOrder[]       @relation("CreatedBy")
+  receivingRecords         ReceivingRecord[]
+  createdSalesOrders       SalesOrder[]          @relation("CreatedBy")
+
+  @@map("users")
+}
+
+model Supplier {
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  phone           String?
+  address         String?
+  rating          Float            @default(0)
+  status          SupplierStatus   @default(ACTIVE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  inboundReceipts InboundReceipt[]
+  purchaseOrders  PurchaseOrder[]
+  rawMaterials    RawMaterial[]
+
+  @@map("suppliers")
+}
+
+model Customer {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  phone             String?
+  address           String?
+  status            CustomerStatus     @default(ACTIVE)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  outboundShipments OutboundShipment[]
+  salesOrders       SalesOrder[]
+
+  @@map("customers")
+}
+
+model Location {
+  id                    String                 @id @default(cuid())
+  code                  String                 @unique
+  zone                  String
+  type                  LocationType
+  capacity              Int
+  occupied              Int                    @default(0)
+  status                LocationStatus         @default(ACTIVE)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  finishedGoods         FinishedGood[]
+  inboundReceiptItems   InboundReceiptItem[]
+  outboundShipmentItems OutboundShipmentItem[]
+  rawMaterials          RawMaterial[]
+
+  @@map("locations")
+}
+
+model RawMaterial {
+  id                    String                 @id @default(cuid())
+  name                  String
+  sku                   String                 @unique
+  description           String?
+  quantity              Int                    @default(0)
+  unit                  String
+  cost                  Float
+  minimumStock          Int                    @default(0)
+  status                InventoryStatus        @default(IN_STOCK)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  supplierId            String
+  locationId            String
+  inboundReceiptItems   InboundReceiptItem[]   @relation("InboundRawMaterial")
+  inventoryAdjustments  InventoryAdjustment[]
+  outboundShipmentItems OutboundShipmentItem[] @relation("OutboundRawMaterial")
+  productionItems       ProductionItem[]
+  purchaseOrderItems    PurchaseOrderItem[]    @relation("PORawMaterial")
+  location              Location               @relation(fields: [locationId], references: [id])
+  supplier              Supplier               @relation(fields: [supplierId], references: [id])
+  receivingRecords      ReceivingRecord[]      @relation("ReceivingRawMaterial")
+  salesOrderItems       SalesOrderItem[]
+
+  @@map("raw_materials")
+}
+
+model FinishedGood {
+  id                    String                 @id @default(cuid())
+  name                  String
+  sku                   String                 @unique
+  description           String?
+  quantity              Int                    @default(0)
+  unit                  String
+  cost                  Float
+  price                 Float
+  minimumStock          Int                    @default(0)
+  imageUrl              String?
+  status                InventoryStatus        @default(IN_STOCK)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  locationId            String
+  location              Location               @relation(fields: [locationId], references: [id])
+  inboundReceiptItems   InboundReceiptItem[]   @relation("InboundFinishedGood")
+  inventoryAdjustments  InventoryAdjustment[]
+  outboundShipmentItems OutboundShipmentItem[] @relation("OutboundFinishedGood")
+  productionOrders      ProductionOrder[]
+  purchaseOrderItems    PurchaseOrderItem[]    @relation("POFinishedGood")
+  receivingRecords      ReceivingRecord[]      @relation("ReceivingFinishedGood")
+  salesOrderItems       SalesOrderItem[]
+  inventorySettings     InventorySettings?
+  warehouseOrders       WarehouseOrder[]       @relation("WarehouseOrders")
+
+  @@map("finished_goods")
+}
+
+model PurchaseOrder {
+  id               String              @id @default(cuid())
+  poNumber         String              @unique
+  expectedDate     DateTime
+  status           PurchaseOrderStatus @default(PENDING)
+  totalValue       Float               @default(0)
+  notes            String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  supplierId       String
+  createdById      String
+  items            PurchaseOrderItem[]
+  createdBy        User                @relation("CreatedBy", fields: [createdById], references: [id])
+  supplier         Supplier            @relation(fields: [supplierId], references: [id])
+  receivingRecords ReceivingRecord[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  itemType        ItemType
+  quantity        Int
+  unitCost        Float
+  totalCost       Float
+  received        Int           @default(0)
+  purchaseOrderId String
+  rawMaterialId   String?
+  finishedGoodId  String?
+  finishedGood    FinishedGood? @relation("POFinishedGood", fields: [finishedGoodId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  rawMaterial     RawMaterial?  @relation("PORawMaterial", fields: [rawMaterialId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+model ReceivingRecord {
+  id              String        @id @default(cuid())
+  receivedDate    DateTime      @default(now())
+  quantity        Int
+  notes           String?
+  createdAt       DateTime      @default(now())
+  purchaseOrderId String
+  userId          String
+  rawMaterialId   String?
+  finishedGoodId  String?
+  finishedGood    FinishedGood? @relation("ReceivingFinishedGood", fields: [finishedGoodId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  rawMaterial     RawMaterial?  @relation("ReceivingRawMaterial", fields: [rawMaterialId], references: [id])
+  user            User          @relation(fields: [userId], references: [id])
+
+  @@map("receiving_records")
+}
+
+model InboundReceipt {
+  id            String               @id @default(cuid())
+  receiptNumber String               @unique
+  receivedDate  DateTime
+  status        InboundReceiptStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  supplierId    String
+  createdById   String
+  items         InboundReceiptItem[]
+  createdBy     User                 @relation("CreatedBy", fields: [createdById], references: [id])
+  supplier      Supplier             @relation(fields: [supplierId], references: [id])
+
+  @@map("inbound_receipts")
+}
+
+model InboundReceiptItem {
+  id               String         @id @default(cuid())
+  itemType         ItemType
+  quantity         Int
+  inboundReceiptId String
+  locationId       String?
+  rawMaterialId    String?
+  finishedGoodId   String?
+  finishedGood     FinishedGood?  @relation("InboundFinishedGood", fields: [finishedGoodId], references: [id])
+  inboundReceipt   InboundReceipt @relation(fields: [inboundReceiptId], references: [id], onDelete: Cascade)
+  location         Location?      @relation(fields: [locationId], references: [id])
+  rawMaterial      RawMaterial?   @relation("InboundRawMaterial", fields: [rawMaterialId], references: [id])
+
+  @@map("inbound_receipt_items")
+}
+
+model SalesOrder {
+  id              String           @id @default(cuid())
+  soNumber        String           @unique
+  orderDate       DateTime         @default(now())
+  shipDate        DateTime
+  status          SalesOrderStatus @default(PREPARING)
+  priority        Priority         @default(MEDIUM)
+  totalValue      Float            @default(0)
+  shippingAddress String?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  customerId      String
+  createdById     String
+  items           SalesOrderItem[]
+  createdBy       User             @relation("CreatedBy", fields: [createdById], references: [id])
+  customer        Customer         @relation(fields: [customerId], references: [id])
+
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id             String        @id @default(cuid())
+  quantity       Int
+  unitPrice      Float
+  totalPrice     Float
+  shipped        Int           @default(0)
+  salesOrderId   String
+  finishedGoodId String?
+  rawMaterialId  String?
+  finishedGood   FinishedGood? @relation(fields: [finishedGoodId], references: [id], onDelete: Restrict)
+  rawMaterial    RawMaterial?  @relation(fields: [rawMaterialId], references: [id], onUpdate: NoAction)
+  salesOrder     SalesOrder    @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@map("sales_order_items")
+}
+
+model OutboundShipment {
+  id              String                 @id @default(cuid())
+  shipmentNumber  String                 @unique
+  shipDate        DateTime
+  status          OutboundShipmentStatus @default(PREPARING)
+  shippingAddress String?
+  notes           String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  customerId      String
+  createdById     String
+  items           OutboundShipmentItem[]
+  createdBy       User                   @relation("CreatedBy", fields: [createdById], references: [id])
+  customer        Customer               @relation(fields: [customerId], references: [id])
+
+  @@map("outbound_shipments")
+}
+
+model OutboundShipmentItem {
+  id                 String           @id @default(cuid())
+  itemType           ItemType
+  quantity           Int
+  outboundShipmentId String
+  locationId         String?
+  rawMaterialId      String?
+  finishedGoodId     String?
+  finishedGood       FinishedGood?    @relation("OutboundFinishedGood", fields: [finishedGoodId], references: [id])
+  location           Location?        @relation(fields: [locationId], references: [id])
+  outboundShipment   OutboundShipment @relation(fields: [outboundShipmentId], references: [id], onDelete: Cascade)
+  rawMaterial        RawMaterial?     @relation("OutboundRawMaterial", fields: [rawMaterialId], references: [id])
+
+  @@map("outbound_shipment_items")
+}
+
+model ProductionOrder {
+  id               String           @id @default(cuid())
+  productionNumber String           @unique
+  targetQuantity   Int
+  producedQuantity Int              @default(0)
+  status           ProductionStatus @default(PENDING)
+  startDate        DateTime?
+  endDate          DateTime?
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  finishedGoodId   String
+  items            ProductionItem[]
+  finishedGood     FinishedGood     @relation(fields: [finishedGoodId], references: [id])
+
+  @@map("production_orders")
+}
+
+model ProductionItem {
+  id                String          @id @default(cuid())
+  requiredQuantity  Int
+  consumedQuantity  Int             @default(0)
+  productionOrderId String
+  rawMaterialId     String
+  productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+  rawMaterial       RawMaterial     @relation(fields: [rawMaterialId], references: [id])
+
+  @@map("production_items")
+}
+
+model InventoryAdjustment {
+  id             String         @id @default(cuid())
+  type           AdjustmentType
+  quantity       Int
+  reason         String
+  reference      String?
+  createdAt      DateTime       @default(now())
+  userId         String
+  rawMaterialId  String?
+  finishedGoodId String?
+  finishedGood   FinishedGood?  @relation(fields: [finishedGoodId], references: [id])
+  rawMaterial    RawMaterial?   @relation(fields: [rawMaterialId], references: [id])
+  user           User           @relation(fields: [userId], references: [id])
+
+  @@map("inventory_adjustments")
+}
+
+model WarehouseSettings {
+  id        String   @id @default(cuid())
+  name      String
+  code      String
+  address   String?
+  manager   String?
+  contact   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("warehouse_settings")
+}
+
+model SystemPreferences {
+  id                   String   @id @default(cuid())
+  autoGenerateSKU      Boolean  @default(true)
+  lowStockAlerts       Boolean  @default(true)
+  qualityCheckRequired Boolean  @default(true)
+  barcodeScanning      Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("system_preferences")
+}
+
+model NotificationSettings {
+  id                     String   @id @default(cuid())
+  lowStockNotifications  Boolean  @default(true)
+  overstockNotifications Boolean  @default(false)
+  expiryAlerts           Boolean  @default(true)
+  newOrderAlerts         Boolean  @default(true)
+  shipmentUpdates        Boolean  @default(true)
+  deliveryConfirmations  Boolean  @default(false)
+  systemMaintenance      Boolean  @default(true)
+  securityAlerts         Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("notification_settings")
+}
+
+model InventorySettings {
+  id                String       @id @default(cuid())
+  finishedGoodId    String       @unique
+  reorderPoint      Int
+  reorderQuantity   Int
+  maxStockLevel     Int
+  leadTimeDays      Int          @default(7)
+  status            Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  finishedGood      FinishedGood @relation(fields: [finishedGoodId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_settings")
+}
+
+model WarehouseOrder {
+  id             String          @id @default(cuid())
+  orderNumber    String          @unique
+  finishedGoodId String
+  quantity       Int
+  status         WarehouseOrderStatus @default(PENDING)
+  requestedDate  DateTime        @default(now())
+  receivedDate   DateTime?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  finishedGood   FinishedGood    @relation("WarehouseOrders", fields: [finishedGoodId], references: [id], onDelete: Restrict)
+
+  @@map("warehouse_orders")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LocationType {
+  SHELF
+  PALLET
+  BIN
+  FLOOR
+}
+
+enum LocationStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum InventoryStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+enum InboundReceiptStatus {
+  PENDING
+  PROCESSED
+  CANCELLED
+}
+
+enum SalesOrderStatus {
+  PREPARING
+  READY
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum OutboundShipmentStatus {
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ProductionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AdjustmentType {
+  INCREASE
+  DECREASE
+  TRANSFER
+  DAMAGE
+  PRODUCTION
+}
+
+enum ItemType {
+  raw_material
+  finished_good
+}
+
+enum WarehouseOrderStatus {
+  PENDING
+  RECEIVED
+  CANCELLED
+}

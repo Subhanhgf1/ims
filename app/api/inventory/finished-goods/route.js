@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+
+export async function GET() {
+  try {
+    const finishedGoods = await prisma.finishedGood.findMany({
+      include: {
+        location: {
+          select: { code: true, zone: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    })
+
+    return NextResponse.json(finishedGoods)
+  } catch (error) {
+    console.error("Error fetching finished goods:", error)
+    return NextResponse.json({ error: "Failed to fetch finished goods" }, { status: 500 })
+  }
+}
+
+export async function POST(request) {
+  try {
+    const data = await request.json()
+    const { name, sku, description, unit, cost, price, minimumStock, locationId, imageUrl } = data
+
+    if (!name || !sku || !unit || cost === undefined || price === undefined || !locationId) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    const finishedGood = await prisma.finishedGood.create({
+      data: {
+        name,
+        sku,
+        description,
+        unit,
+        cost: Number.parseFloat(cost),
+        price: Number.parseFloat(price),
+        minimumStock: Number.parseInt(minimumStock) || 0,
+        locationId,
+        imageUrl: imageUrl || null,
+      },
+      include: {
+        location: {
+          select: { code: true, zone: true },
+        },
+      },
+    })
+
+    return NextResponse.json(finishedGood, { status: 201 })
+  } catch (error) {
+    console.error("Error creating finished good:", error)
+    if (error.code === "P2002") {
+      return NextResponse.json({ error: "SKU already exists" }, { status: 400 })
+    }
+    return NextResponse.json({ error: "Failed to create finished good" }, { status: 500 })
+  }
+}
