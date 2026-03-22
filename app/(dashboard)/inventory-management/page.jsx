@@ -1,8 +1,8 @@
 import InventoryManagement from "@/components/inventory-management"
 
 export const metadata = {
-  title: "Inventory Management - WMS Pro",
-  description: "Manage finished goods inventory with thresholds and warehouse orders",
+  title: "Inventory Management - IMS Pro",
+  description: "Manage finished goods inventory with thresholds and inventory orders",
 }
 
 export default function InventoryManagementPage() {

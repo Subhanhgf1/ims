@@ -1,7 +1,7 @@
-# WMS Pro - Optimized Route Structure
+# IMS Pro - Optimized Route Structure
 
 ## Overview
-The WMS application has been refactored from a single-page tab-based system to a fully optimized multi-route architecture using Next.js 14 App Router. This provides automatic code splitting, better performance, and cleaner code organization.
+The IMS application has been refactored from a single-page tab-based system to a fully optimized multi-route architecture using Next.js 14 App Router. This provides automatic code splitting, better performance, and cleaner code organization.
 
 ## Architecture
 
@@ -91,7 +91,7 @@ components/
 ## Navigation Component Features
 
 ### DashboardNav (`components/dashboard-nav.jsx`)
-- **Header**: Shows WMS Pro branding and user info
+- **Header**: Shows IMS Pro branding and user info
 - **Sidebar**: Navigation menu with route links
 - **Mobile Support**: Collapsible sidebar on small screens
 - **Active State**: Visual indicator for current page
@@ -142,10 +142,10 @@ Each nav item contains:
 - `POST /api/inventory/settings` - Create settings
 - `PATCH /api/inventory/settings/[id]` - Update settings
 - `DELETE /api/inventory/settings/[id]` - Delete settings
-- `GET /api/inventory/warehouse-orders` - Get all orders
-- `POST /api/inventory/warehouse-orders` - Create order
-- `PATCH /api/inventory/warehouse-orders/[id]` - Update order
-- `DELETE /api/inventory/warehouse-orders/[id]` - Delete order
+- `GET /api/inventory/inventory-orders` - Get all orders
+- `POST /api/inventory/inventory-orders` - Create order
+- `PATCH /api/inventory/inventory-orders/[id]` - Update order
+- `DELETE /api/inventory/inventory-orders/[id]` - Delete order
 
 ## Migration Guide
 
@@ -208,7 +208,7 @@ const { user, login, logout, loading } = useAuth()
 
 ### Auth Not Working
 - Verify AuthProvider wraps app in root layout
-- Check localStorage for "wms_user"
+- Check localStorage for "ims_user"
 - Verify login API endpoint works
 
 ## Future Improvements

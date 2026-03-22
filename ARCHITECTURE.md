@@ -1,4 +1,4 @@
-# WMS Pro - System Architecture
+# IMS Pro - System Architecture
 
 ## High-Level Architecture
 
@@ -175,7 +175,7 @@ Global State (Context)
 │   ├── /finished-goods (GET, POST, PATCH, DELETE)
 │   ├── /raw-materials (GET, POST, PATCH, DELETE)
 │   ├── /settings (GET, POST, PATCH, DELETE)
-│   └── /warehouse-orders (GET, POST, PATCH, DELETE)
+│   └── /inventory-orders (GET, POST, PATCH, DELETE)
 ├── /inbound-receipts (GET, POST, PATCH)
 ├── /outbound-shipments (GET, POST, PATCH)
 ├── /production
@@ -183,7 +183,7 @@ Global State (Context)
 ├── /purchase-orders (GET, POST, PATCH)
 ├── /sales-orders (GET, POST, PATCH)
 ├── /settings
-│   ├── /warehouse (GET, POST)
+│   ├── /inventory (GET, POST)
 │   ├── /notifications (GET, POST)
 │   └── /preferences (GET, POST)
 ├── /dashboard
@@ -221,7 +221,7 @@ FinishedGood
 ├── quantity
 ├── minimumStock
 ├── locationId (FK)
-├── warehouseOrders (Relation)
+├── inventoryOrders (Relation)
 └── inventorySettings (Relation)
 
 InventorySettings
@@ -233,7 +233,7 @@ InventorySettings
 ├── leadTimeDays
 └── status
 
-WarehouseOrder
+InventoryOrder
 ├── id (PK)
 ├── orderNumber (UNIQUE)
 ├── finishedGoodId (FK)

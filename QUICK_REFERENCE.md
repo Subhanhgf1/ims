@@ -1,4 +1,4 @@
-# WMS Pro - Quick Reference Card
+# IMS Pro - Quick Reference Card
 
 ## Routes at a Glance
 

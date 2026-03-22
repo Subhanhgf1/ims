@@ -9,7 +9,7 @@ export async function PATCH(req, { params }) {
     const body = await req.json();
     const { status, receivedDate, notes } = body;
 
-    const order = await prisma.warehouseOrder.update({
+    const order = await prisma.inventoryOrder.update({
       where: { id },
       data: {
         ...(status && { status }),
@@ -31,7 +31,7 @@ export async function PATCH(req, { params }) {
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error('Error updating warehouse order:', error);
+    console.error('Error updating inventory order:', error);
     return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
   }
 }
@@ -40,13 +40,13 @@ export async function DELETE(req, { params }) {
   try {
     const { id } = params;
 
-    await prisma.warehouseOrder.delete({
+    await prisma.inventoryOrder.delete({
       where: { id },
     });
 
     return NextResponse.json({ message: 'Order deleted successfully' });
   } catch (error) {
-    console.error('Error deleting warehouse order:', error);
+    console.error('Error deleting inventory order:', error);
     return NextResponse.json({ error: 'Failed to delete order' }, { status: 500 });
   }
 }

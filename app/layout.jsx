@@ -6,8 +6,8 @@ import { AuthProvider } from "@/lib/auth"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "WMS Pro - Warehouse Management System",
-  description: "Professional warehouse management system with inventory tracking",
+  title: "IMS Pro - Inventory Management System",
+  description: "Professional inventory management system with inventory tracking",
   generator: 'v0.app'
 }
 

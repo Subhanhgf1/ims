@@ -1,8 +1,8 @@
 import Inventory from "@/components/inventory"
 
 export const metadata = {
-  title: "Inventory - WMS Pro",
-  description: "Manage warehouse inventory",
+  title: "Inventory - IMS Pro",
+  description: "Manage inventory inventory",
 }
 
 export default function InventoryPage() {

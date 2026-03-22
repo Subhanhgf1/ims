@@ -53,6 +53,13 @@ export default function Dashboard() {
     }
   }
 
+  const handleViewStock = () => {
+    // Redirect to low stock items 
+    console.log("Redirecting to low stock items page...")
+    window.location.href = "/inventory?lowStock=true&outStock=true"
+
+  }
+
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetchStats()
@@ -104,6 +111,25 @@ export default function Dashboard() {
         </Button>
       </div>
 
+  {/* Alerts */}
+      {stats.inventory.lowStockItems > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-800">
+              <AlertTriangle className="h-5 w-5" />
+              Inventory Alerts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-orange-700">
+              You have {stats.inventory.lowStockItems} items running low on stock. Consider creating purchase orders to
+              restock these items.
+            </p>
+     
+          </CardContent>
+        </Card>
+      )}
+
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -128,8 +154,13 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">{stats.inventory.lowStockItems}</div>
-            <p className="text-xs text-muted-foreground">Items need restocking</p>
+            {/* <p className="text-xs text-muted-foreground">Items need restocking</p> */}
+            {/* redirect to a page where low stock items are can be seen /inventory?lowStock=true */}
+             <Button onClick={handleViewStock} variant="outline" className="mt-2 bg-transparent" size="sm">
+              View These Items
+            </Button>
           </CardContent>
+
         </Card>
 
         <Card>
@@ -199,7 +230,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Activities</CardTitle>
-            <CardDescription>Latest warehouse operations</CardDescription>
+            <CardDescription>Latest inventory operations</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -221,11 +252,16 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+ 
+
+    
+
+
+           {/* Quick Actions */}
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common warehouse operations</CardDescription>
+          <CardDescription>Common inventory operations</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
@@ -244,27 +280,6 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Alerts */}
-      {stats.inventory.lowStockItems > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-800">
-              <AlertTriangle className="h-5 w-5" />
-              Inventory Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-orange-700">
-              You have {stats.inventory.lowStockItems} items running low on stock. Consider creating purchase orders to
-              restock these items.
-            </p>
-            <Button variant="outline" className="mt-3 bg-transparent" size="sm">
-              View Low Stock Items
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

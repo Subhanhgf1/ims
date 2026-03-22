@@ -1,7 +1,7 @@
 import Inbound from "@/components/inbound"
 
 export const metadata = {
-  title: "Inbound - WMS Pro",
+  title: "Inbound - IMS Pro",
   description: "Manage inbound shipments and receiving",
 }
 

@@ -12,10 +12,10 @@ async function main() {
   const hashedOperatorPassword = await bcrypt.hash("operator123", 10)
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@wms.com" },
+    where: { email: "admin@ims.com" },
     update: {},
     create: {
-      email: "admin@wms.com",
+      email: "admin@ims.com",
       name: "Admin User",
       password: hashedPassword,
       role: "ADMIN",
@@ -24,10 +24,10 @@ async function main() {
   })
 
   const manager = await prisma.user.upsert({
-    where: { email: "manager@wms.com" },
+    where: { email: "manager@ims.com" },
     update: {},
     create: {
-      email: "manager@wms.com",
+      email: "manager@ims.com",
       name: "Manager User",
       password: hashedManagerPassword,
       role: "MANAGER",
@@ -36,10 +36,10 @@ async function main() {
   })
 
   const operator = await prisma.user.upsert({
-    where: { email: "operator@wms.com" },
+    where: { email: "operator@ims.com" },
     update: {},
     create: {
-      email: "operator@wms.com",
+      email: "operator@ims.com",
       name: "Operator User",
       password: hashedOperatorPassword,
       role: "OPERATOR",
@@ -189,9 +189,9 @@ async function main() {
 
   console.log("Database seeded successfully!")
   console.log("Demo accounts created:")
-  console.log("Admin: admin@wms.com / admin123")
-  console.log("Manager: manager@wms.com / manager123")
-  console.log("Operator: operator@wms.com / operator123")
+  console.log("Admin: admin@ims.com / admin123")
+  console.log("Manager: manager@ims.com / manager123")
+  console.log("Operator: operator@ims.com / operator123")
 }
 
 main()

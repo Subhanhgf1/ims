@@ -44,8 +44,8 @@ export default function LoginForm() {
           <div className="flex justify-center">
             <Package className="h-12 w-12 text-blue-600" />
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">WMS Pro</h2>
-          <p className="mt-2 text-sm text-gray-600">Sign in to your warehouse management system</p>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">IMS Pro</h2>
+          <p className="mt-2 text-sm text-gray-600">Sign in to your inventory management system</p>
         </div>
 
         <Card>
@@ -100,9 +100,9 @@ export default function LoginForm() {
             <div className="mt-6 text-sm text-gray-600">
               <p className="font-medium">Demo Accounts:</p>
               <div className="mt-2 space-y-1">
-                <p>Admin: admin@wms.com / admin123</p>
-                <p>Manager: manager@wms.com / manager123</p>
-                <p>Operator: operator@wms.com / operator123</p>
+                <p>Admin: admin@ims.com / admin123</p>
+                <p>Manager: manager@ims.com / manager123</p>
+                <p>Operator: operator@ims.com / operator123</p>
               </div>
             </div>
           </CardContent>

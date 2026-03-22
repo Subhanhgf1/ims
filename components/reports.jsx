@@ -46,7 +46,7 @@ export default function Reports() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Reports & Analytics</h2>
-          <p className="text-muted-foreground">Comprehensive warehouse performance insights</p>
+          <p className="text-muted-foreground">Comprehensive inventory performance insights</p>
         </div>
         <div className="flex gap-2">
           <Select defaultValue="last-30-days">

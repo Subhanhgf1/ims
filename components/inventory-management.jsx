@@ -16,7 +16,7 @@ export default function InventoryManagement() {
   const [finishedGoods, setFinishedGoods] = useState([])
   const [rawMaterials, setRawMaterials] = useState([])
   const [settings, setSettings] = useState([])
-  const [warehouseOrders, setWarehouseOrders] = useState([])
+  const [inventoryOrders, setInventoryOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
@@ -49,7 +49,7 @@ export default function InventoryManagement() {
         fetch("/api/inventory/finished-goods"),
         fetch("/api/inventory/raw-materials"),
         fetch("/api/inventory/settings"),
-        fetch("/api/inventory/warehouse-orders"),
+        fetch("/api/inventory/inventory-orders"),
       ])
 
       const [finishedGoodsData, rawMaterialsData, settingsData, ordersData] = await Promise.all([
@@ -62,7 +62,7 @@ export default function InventoryManagement() {
       setFinishedGoods(finishedGoodsData)
       setRawMaterials(rawMaterialsData)
       setSettings(settingsData)
-      setWarehouseOrders(ordersData)
+      setInventoryOrders(ordersData)
     } catch (error) {
       toast({
         title: "Error",
@@ -120,7 +120,7 @@ export default function InventoryManagement() {
   const handleCreateOrder = async (e) => {
     e.preventDefault()
     try {
-      const response = await fetch("/api/inventory/warehouse-orders", {
+      const response = await fetch("/api/inventory/inventory-orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -137,7 +137,7 @@ export default function InventoryManagement() {
 
       toast({
         title: "Success",
-        description: "Warehouse order placed successfully",
+        description: "Inventory order placed successfully",
       })
 
       setIsOrderModalOpen(false)
@@ -158,7 +158,7 @@ export default function InventoryManagement() {
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`/api/inventory/warehouse-orders/${orderId}`, {
+      const response = await fetch(`/api/inventory/inventory-orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -237,7 +237,7 @@ export default function InventoryManagement() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold">Inventory Management</h2>
-          <p className="text-muted-foreground">Manage finished goods and track warehouse orders</p>
+          <p className="text-muted-foreground">Manage finished goods and track inventory orders</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen}>
@@ -338,12 +338,12 @@ export default function InventoryManagement() {
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Place Warehouse Order
+                Place Inventory Order
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Place Warehouse Order</DialogTitle>
+                <DialogTitle>Place Inventory Order</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleCreateOrder} className="space-y-4">
                 <div>
@@ -501,18 +501,18 @@ export default function InventoryManagement() {
         )}
       </div>
 
-      {/* Warehouse Orders Section */}
+      {/* Inventory Orders Section */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold">Warehouse Orders</h3>
-        {warehouseOrders.length === 0 ? (
+        <h3 className="text-xl font-semibold">Inventory Orders</h3>
+        {inventoryOrders.length === 0 ? (
           <Card>
             <CardContent className="py-8">
-              <p className="text-center text-muted-foreground">No warehouse orders yet</p>
+              <p className="text-center text-muted-foreground">No inventory orders yet</p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid gap-4">
-            {warehouseOrders.map((order) => (
+            {inventoryOrders.map((order) => (
               <Card key={order.id} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">

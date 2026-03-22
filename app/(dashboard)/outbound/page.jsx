@@ -1,7 +1,7 @@
 import Outbound from "@/components/outbound"
 
 export const metadata = {
-  title: "Outbound - WMS Pro",
+  title: "Outbound - IMS Pro",
   description: "Manage outbound shipments",
 }
 

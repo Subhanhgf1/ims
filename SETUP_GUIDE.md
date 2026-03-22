@@ -1,4 +1,4 @@
-# WMS Pro - Setup & Development Guide
+# IMS Pro - Setup & Development Guide
 
 ## Quick Start
 
@@ -34,7 +34,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### 5. Login
 Use demo credentials:
-- Email: `admin@wms.com`
+- Email: `admin@ims.com`
 - Password: `admin123`
 
 ## Project Structure Overview
@@ -98,7 +98,7 @@ Use demo credentials:
    import NewFeature from "@/components/new-feature"
 
    export const metadata = {
-     title: "New Feature - WMS Pro",
+     title: "New Feature - IMS Pro",
      description: "Feature description",
    }
 

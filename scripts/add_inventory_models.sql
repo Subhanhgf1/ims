@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS inventory_settings (
   FOREIGN KEY (finished_good_id) REFERENCES finished_goods(id) ON DELETE CASCADE
 );
 
--- Add WarehouseOrder table
-CREATE TABLE IF NOT EXISTS warehouse_orders (
+-- Add InventoryOrder table
+CREATE TABLE IF NOT EXISTS inventory_orders (
   id TEXT PRIMARY KEY,
   order_number TEXT NOT NULL UNIQUE,
   finished_good_id TEXT NOT NULL,
@@ -29,6 +29,6 @@ CREATE TABLE IF NOT EXISTS warehouse_orders (
 
 -- Create indexes for better query performance
 CREATE INDEX idx_inventory_settings_finished_good_id ON inventory_settings(finished_good_id);
-CREATE INDEX idx_warehouse_orders_finished_good_id ON warehouse_orders(finished_good_id);
-CREATE INDEX idx_warehouse_orders_status ON warehouse_orders(status);
-CREATE INDEX idx_warehouse_orders_requested_date ON warehouse_orders(requested_date);
+CREATE INDEX idx_inventory_orders_finished_good_id ON inventory_orders(finished_good_id);
+CREATE INDEX idx_inventory_orders_status ON inventory_orders(status);
+CREATE INDEX idx_inventory_orders_requested_date ON inventory_orders(requested_date);

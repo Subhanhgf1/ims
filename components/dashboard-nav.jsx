@@ -42,7 +42,7 @@ export default function DashboardNav() {
             </button>
 
             <Package className="h-7 w-7 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">WMS Pro</h1>
+            <h1 className="text-xl font-bold text-gray-900">IMS Pro</h1>
           </div>
 
           <div className="flex items-center gap-4">

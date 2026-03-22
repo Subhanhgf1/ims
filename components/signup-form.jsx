@@ -56,8 +56,8 @@ export default function SignupForm() {
           <div className="flex justify-center">
             <Package className="h-12 w-12 text-blue-600" />
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">WMS Pro</h2>
-          <p className="mt-2 text-sm text-gray-600">Create a new account for your warehouse system</p>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">IMS Pro</h2>
+          <p className="mt-2 text-sm text-gray-600">Create a new account for your inventory system</p>
         </div>
 
         <Card>

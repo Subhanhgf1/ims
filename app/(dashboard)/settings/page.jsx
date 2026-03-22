@@ -1,7 +1,7 @@
 import SettingsComponent from "@/components/settings"
 
 export const metadata = {
-  title: "Settings - WMS Pro",
+  title: "Settings - IMS Pro",
   description: "Manage system settings and preferences",
 }
 

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
-    const orders = await prisma.warehouseOrder.findMany({
+    const orders = await prisma.inventoryOrder.findMany({
       include: {
         finishedGood: {
           select: {
@@ -22,7 +22,7 @@ export async function GET() {
 
     return NextResponse.json(orders);
   } catch (error) {
-    console.error('Error fetching warehouse orders:', error);
+    console.error('Error fetching inventory orders:', error);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 }
@@ -33,10 +33,10 @@ export async function POST(req) {
     const { finishedGoodId, quantity, notes } = body;
 
     // Generate order number
-    const orderCount = await prisma.warehouseOrder.count();
+    const orderCount = await prisma.inventoryOrder.count();
     const orderNumber = `WO-${Date.now()}-${orderCount + 1}`;
 
-    const order = await prisma.warehouseOrder.create({
+    const order = await prisma.inventoryOrder.create({
       data: {
         orderNumber,
         finishedGoodId,
@@ -59,7 +59,7 @@ export async function POST(req) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
-    console.error('Error creating warehouse order:', error);
+    console.error('Error creating inventory order:', error);
     return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
   }
 }

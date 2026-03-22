@@ -1,7 +1,7 @@
 import Production from "@/components/production"
 
 export const metadata = {
-  title: "Production - WMS Pro",
+  title: "Production - IMS Pro",
   description: "Manage production orders and manufacturing",
 }
 

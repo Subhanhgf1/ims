@@ -33,7 +33,7 @@ export default function Settings() {
   const [locations, setLocations] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [customers, setCustomers] = useState([])
-  const [warehouseSettings, setWarehouseSettings] = useState({})
+  const [inventorySettings, setInventorySettings] = useState({})
   const [systemPreferences, setSystemPreferences] = useState({})
   const [notificationSettings, setNotificationSettings] = useState({})
 
@@ -56,7 +56,7 @@ export default function Settings() {
 
       switch (activeSection) {
         case "general":
-          await fetchWarehouseSettings()
+          await fetchInventorySettings()
           await fetchSystemPreferences()
           break
         case "users":
@@ -118,11 +118,11 @@ export default function Settings() {
     }
   }
 
-  const fetchWarehouseSettings = async () => {
-    const response = await fetch("/api/settings/warehouse")
+  const fetchInventorySettings = async () => {
+    const response = await fetch("/api/settings/inventory")
     if (response.ok) {
       const data = await response.json()
-      setWarehouseSettings(data)
+      setInventorySettings(data)
     }
   }
 
@@ -291,21 +291,21 @@ export default function Settings() {
     }
   }
 
-  const handleSaveWarehouseSettings = async (e) => {
+  const handleSaveInventorySettings = async (e) => {
     e.preventDefault()
 
     try {
       setSubmitting(true)
-      const response = await fetch("/api/settings/warehouse", {
+      const response = await fetch("/api/settings/inventory", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(warehouseSettings),
+        body: JSON.stringify(inventorySettings),
       })
 
       if (response.ok) {
         toast({
           title: "Success",
-          description: "Warehouse settings saved successfully",
+          description: "Inventory settings saved successfully",
         })
       } else {
         throw new Error("Failed to save settings")
@@ -414,27 +414,27 @@ export default function Settings() {
     <div className="grid gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Warehouse Information</CardTitle>
-          <CardDescription>Basic warehouse configuration</CardDescription>
+          <CardTitle>Inventory Information</CardTitle>
+          <CardDescription>Basic inventory configuration</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSaveWarehouseSettings}>
+          <form onSubmit={handleSaveInventorySettings}>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="warehouse-name">Warehouse Name</Label>
+                  <Label htmlFor="inventory-name">Inventory Name</Label>
                   <Input
-                    id="warehouse-name"
-                    value={warehouseSettings.name || ""}
-                    onChange={(e) => setWarehouseSettings((prev) => ({ ...prev, name: e.target.value }))}
+                    id="inventory-name"
+                    value={inventorySettings.name || ""}
+                    onChange={(e) => setInventorySettings((prev) => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="warehouse-code">Warehouse Code</Label>
+                  <Label htmlFor="inventory-code">Inventory Code</Label>
                   <Input
-                    id="warehouse-code"
-                    value={warehouseSettings.code || ""}
-                    onChange={(e) => setWarehouseSettings((prev) => ({ ...prev, code: e.target.value }))}
+                    id="inventory-code"
+                    value={inventorySettings.code || ""}
+                    onChange={(e) => setInventorySettings((prev) => ({ ...prev, code: e.target.value }))}
                   />
                 </div>
               </div>
@@ -442,25 +442,25 @@ export default function Settings() {
                 <Label htmlFor="address">Address</Label>
                 <Input
                   id="address"
-                  value={warehouseSettings.address || ""}
-                  onChange={(e) => setWarehouseSettings((prev) => ({ ...prev, address: e.target.value }))}
+                  value={inventorySettings.address || ""}
+                  onChange={(e) => setInventorySettings((prev) => ({ ...prev, address: e.target.value }))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="manager">Warehouse Manager</Label>
+                  <Label htmlFor="manager">Inventory Manager</Label>
                   <Input
                     id="manager"
-                    value={warehouseSettings.manager || ""}
-                    onChange={(e) => setWarehouseSettings((prev) => ({ ...prev, manager: e.target.value }))}
+                    value={inventorySettings.manager || ""}
+                    onChange={(e) => setInventorySettings((prev) => ({ ...prev, manager: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contact">Contact Number</Label>
                   <Input
                     id="contact"
-                    value={warehouseSettings.contact || ""}
-                    onChange={(e) => setWarehouseSettings((prev) => ({ ...prev, contact: e.target.value }))}
+                    value={inventorySettings.contact || ""}
+                    onChange={(e) => setInventorySettings((prev) => ({ ...prev, contact: e.target.value }))}
                   />
                 </div>
               </div>
@@ -614,7 +614,7 @@ export default function Settings() {
         <div className="flex justify-between items-center">
           <div>
             <CardTitle>Location Management</CardTitle>
-            <CardDescription>Manage warehouse locations and zones</CardDescription>
+            <CardDescription>Manage inventory locations and zones</CardDescription>
           </div>
           {(user.role === "ADMIN" || user.role === "MANAGER") && (
             <Button onClick={() => setIsAddDialogOpen(true)}>

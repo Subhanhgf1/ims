@@ -59,3 +59,24 @@ export async function POST(request) {
   }
 }
 
+export async function DELETE(request) {
+  try {
+    const { ids } = await request.json()
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: "No IDs provided" }, { status: 400 })
+    }
+
+    await prisma.finishedGood.deleteMany({
+      where: {
+        id: { in: ids },
+      },
+    })
+
+    return NextResponse.json({ message: "Finished goods deleted successfully" })
+  } catch (error) {
+    console.error("Error deleting finished goods:", error)
+    return NextResponse.json({ error: "Failed to delete finished goods" }, { status: 500 })
+  }
+}
+
