@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useAuth } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateReceivingReportPDF } from "@/lib/pdf-generator"
+import { add } from "date-fns"
 
 
 export default function Inbound() {
@@ -63,6 +64,37 @@ export default function Inbound() {
   useEffect(() => {
     fetchData()
   }, [activeTab])
+
+
+  useEffect(() => {
+    // Check if redirected from inventory with restock intent
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("restock") === "true") {
+      toast({
+        title: "Restock",
+        description: "You can create a purchase order to restock the selected items",
+        variant: "info",
+      })
+      setActiveTab("purchase-orders")
+      setIsCreatePODialogOpen(true)
+      // set from data items from local storage and clear it from local storage
+      const storedItems = localStorage.getItem("restockItems")
+      if (storedItems) {
+        const items = JSON.parse(storedItems)
+        setFormData((prev) => ({
+          ...prev,
+          items: items.map((item) => ({
+            itemType: item.type === "raw_material" ? "raw_material" : "finished_goods", 
+            itemId: item.id,
+            quantity: (item.minimumStock - item.quantity).toString(),
+            unitCost: item.cost ? item.cost.toString() : "0",
+          })),
+        }))
+        // localStorage.removeItem("restockItems")
+      }
+    }
+  }, [])
+
 
   const fetchData = async () => {
     try {
@@ -284,7 +316,7 @@ export default function Inbound() {
   const addPOItem = () => {
     setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { itemType: "raw_material", itemId: "", quantity: "", unitCost: "0" }],
+      items: [...prev.items, { itemType: "finished_goods", itemId: "", quantity: "", unitCost: "0" }],
     }))
   }
 
@@ -708,7 +740,7 @@ export default function Inbound() {
                           className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                           style={{ pointerEvents: 'auto' }}
                         >
-                          <option value="raw_material">Raw Material</option>
+                          {/* <option value="raw_material">Raw Material</option> */}
                           <option value="finished_good">Finished Good</option>
                         </select>
                       </div>

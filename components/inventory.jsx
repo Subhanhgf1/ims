@@ -20,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import AdvancedInventoryModal from "./advanced-inventory-modal"
 import BulkEditModal from "./bulk-edit-modal"
+import { redirect } from "next/dist/server/api-utils"
 
 const STATUS_OPTIONS = [
   { value: "in-stock", label: "In Stock" },
@@ -33,6 +34,7 @@ const BULK_ACTIONS = [
     group: "Edit",
     actions: [
       { id: "bulk-edit",    label: "Edit Selected",       icon: PencilLine,    variant: "default" },
+      { id: "restock",       label: "Restock Selected",    icon: Truck,         variant: "success" },
     ],
   },
   {
@@ -387,6 +389,13 @@ export default function Inventory() {
         setIsBulkEditOpen(true)
         break
 
+        case "restock":
+          localStorage.setItem("restockItems", JSON.stringify(selectedItemsData))
+          // send user to /inbound with restock = true param
+          toast({ title: "Restock", description: "Redirecting to inbound...", variant: "info" })
+          const query = new URLSearchParams({ restock: "true" }).toString()
+          window.location.href = `/inbound?${query}`
+          break
       case "delete":
         if (!confirm(`Delete ${selectedItems.length} item${selectedItems.length !== 1 ? "s" : ""}? This cannot be undone.`)) return
         setBulkLoadingAction("delete")
