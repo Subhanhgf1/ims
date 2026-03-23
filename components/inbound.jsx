@@ -49,7 +49,7 @@ export default function Inbound() {
   // Form states
   const [formData, setFormData] = useState({
     supplierId: "",
-    expectedDate: "",
+    expectedDate: new Date().toISOString().split("T")[0],
     notes: "",
     items: [],
   })
@@ -729,7 +729,7 @@ export default function Inbound() {
                   value={formData.notes}
                   onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                   placeholder="Additional notes or special instructions"
-                  className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="border-gray-300 h-16 focus:border-blue-500 focus:ring-blue-500"
                   style={{ pointerEvents: 'auto' }}
                 />
               </div>
@@ -743,55 +743,68 @@ export default function Inbound() {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {formData.items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-5 gap-3 items-end p-4 border border-gray-200 rounded-lg bg-gray-50/30" style={{ pointerEvents: 'auto' }}>
-                      <div className="space-y-1.5">
-                        <RequiredLabel className="text-xs font-medium" required>
-                          Type
-                        </RequiredLabel>
-                        <select
-                          value={item.itemType}
-                          onChange={(e) => updatePOItem(index, "itemType", e.target.value)}
-                          className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                          style={{ pointerEvents: 'auto' }}
-                        >
-                          {/* <option value="raw_material">Raw Material</option> */}
-                          <option value="finished_good">Finished Good</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <RequiredLabel className="text-xs font-medium" required>
-                          Item
-                        </RequiredLabel>
-                        <ItemSelector
-                          items={getItemOptions(item.itemType)}
-                          value={item.itemId}
-                          onValueChange={(value) => updatePOItem(index, "itemId", value)}
-                          placeholder="Select item"
-                          className="h-9 text-xs"
-                          style={{ pointerEvents: 'auto' }}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <RequiredLabel className="text-xs font-medium" required>
-                          Quantity
-                        </RequiredLabel>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updatePOItem(index, "quantity", e.target.value)}
-                          className="h-9 text-xs border-gray-300"
-                          placeholder="0"
-                          style={{ pointerEvents: 'auto' }}
-                          required
-                        />
-                      </div>
-                      <Button type="button" variant="outline" size="sm" onClick={() => removePOItem(index)} style={{ pointerEvents: 'auto' }} className="h-9">
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
+               {formData.items.map((item, index) => (
+  <div key={index} className="grid grid-cols-4 gap-3 items-end p-4 border border-gray-200 rounded-lg bg-gray-50/30" style={{ pointerEvents: 'auto' }}>
+    {/* <div className="space-y-1.5">
+      <RequiredLabel className="text-xs font-medium" required>
+        Type
+      </RequiredLabel>
+      <select
+        value={item.itemType}
+        onChange={(e) => updatePOItem(index, "itemType", e.target.value)}
+        className="flex h-9 w-full rounded-md border border-gray-300 bg-white px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+        style={{ pointerEvents: 'auto' }}
+      >
+        <option value="finished_good">Finished Good</option>
+      </select>
+    </div> */}
+    <div className="space-y-1.5 col-span-2">
+      <RequiredLabel className="text-xs font-medium" required>
+        Item
+      </RequiredLabel>
+      <ItemSelector
+        items={getItemOptions(item.itemType)}
+        value={item.itemId}
+        onValueChange={(value) => updatePOItem(index, "itemId", value)}
+        placeholder="Select item"
+        className="h-9 text-xs"
+        style={{ pointerEvents: 'auto' }}
+        required
+      />
+      {/* Selected item details badge */}
+      {item.itemId && (() => {
+        const selectedItem = getItemOptions(item.itemType).find(i => i.id === item.itemId);
+        return selectedItem ? (
+          <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-100 rounded-md">
+            <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+              {selectedItem.sku}
+            </span>
+            <span className="text-xs text-gray-500">
+              {selectedItem.quantity} {selectedItem.unit} in stock
+            </span>
+          </div>
+        ) : null;
+      })()}
+    </div>
+    <div className="space-y-1.5">
+      <RequiredLabel className="text-xs font-medium" required>
+        Quantity
+      </RequiredLabel>
+      <Input
+        type="number"
+        value={item.quantity}
+        onChange={(e) => updatePOItem(index, "quantity", e.target.value)}
+        className="h-9 text-xs border-gray-300"
+        placeholder="0"
+        style={{ pointerEvents: 'auto' }}
+        required
+      />
+    </div>
+    <Button type="button" variant="outline" size="sm" onClick={() => removePOItem(index)} style={{ pointerEvents: 'auto' }} className="h-9">
+      Remove
+    </Button>
+  </div>
+))}
                 </div>
               </div>
             </div>

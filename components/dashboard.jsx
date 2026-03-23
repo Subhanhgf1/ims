@@ -265,17 +265,13 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            <Button variant="outline" className="h-20 flex-col gap-2 bg-transparent">
+            <Button onClick={() => { 
+              console.log("Redirecting to create inbound order page...")
+              window.location.href = "/inbound"
+            
+            }} variant="outline" className="h-20 flex-col gap-2 bg-transparent">
               <Package className="h-6 w-6" />
-              <span>Create Purchase Order</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2 bg-transparent">
-              <TrendingUp className="h-6 w-6" />
-              <span>Start Production</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2 bg-transparent">
-              <CheckCircle className="h-6 w-6" />
-              <span>Process Shipment</span>
+              <span>Create Inbound Order</span>
             </Button>
           </div>
         </CardContent>

@@ -2,6 +2,9 @@ export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { sendAdminNotificationOnGroup } from "@/lib/utils"
+import { se } from "date-fns/locale"
+import { send } from "process"
 
 export async function GET() {
   try {
@@ -54,8 +57,6 @@ export async function GET() {
   }
 }
 
-
-
 export async function POST(request, { params }) {
   try {
     const { id } = params
@@ -65,7 +66,6 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Fetch PO outside transaction (faster)
     const purchaseOrder = await prisma.purchaseOrder.findUnique({
       where: { id },
       include: { items: true },
@@ -79,6 +79,7 @@ export async function POST(request, { params }) {
       const poItemUpdates = []
       const receivingData = []
       const inventoryOps = []
+      const receivedSummary = []
 
       for (const receivedItem of items) {
         const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId)
@@ -89,7 +90,6 @@ export async function POST(request, { params }) {
 
         const newReceivedTotal = poItem.received + receivedQuantity
 
-        // Update PO item received quantity
         poItemUpdates.push(
           tx.purchaseOrderItem.update({
             where: { id: poItem.id },
@@ -97,7 +97,6 @@ export async function POST(request, { params }) {
           })
         )
 
-        // Collect receiving record for bulk insert
         receivingData.push({
           purchaseOrderId: id,
           quantity: receivedQuantity,
@@ -108,7 +107,13 @@ export async function POST(request, { params }) {
           finishedGoodId: poItem.finishedGoodId,
         })
 
-        // Inventory updates
+        receivedSummary.push({
+          name: poItem.name ?? poItem.rawMaterialId ?? poItem.finishedGoodId ?? "Unknown item",
+          qty: receivedQuantity,
+          ordered: poItem.quantity,
+          totalReceived: newReceivedTotal,
+        })
+
         if (poItem.rawMaterialId) {
           inventoryOps.push(
             tx.rawMaterial.update({
@@ -126,7 +131,6 @@ export async function POST(request, { params }) {
         }
       }
 
-      // Execute in parallel
       await Promise.all([
         ...poItemUpdates,
         ...inventoryOps,
@@ -135,7 +139,6 @@ export async function POST(request, { params }) {
           : Promise.resolve(),
       ])
 
-      // Check updated PO items
       const updatedItems = await tx.purchaseOrderItem.findMany({
         where: { purchaseOrderId: id },
       })
@@ -149,19 +152,35 @@ export async function POST(request, { params }) {
         ? "PARTIALLY_RECEIVED"
         : "PENDING"
 
-      // Update PO status
       await tx.purchaseOrder.update({
         where: { id },
         data: { status: newStatus },
       })
 
-      return { success: true, status: newStatus }
-    }, { timeout: 30000 }) // prevent Prisma timeout
+      return { success: true, status: newStatus, receivedSummary }
+    }, { timeout: 30000 })
 
-    return NextResponse.json(result)
+    if (result.status === "RECEIVED" || result.status === "PARTIALLY_RECEIVED") {
+      const itemLines = result.receivedSummary
+        .map((item) => `  • ${item.name}: +${item.qty} (${item.totalReceived}/${item.ordered} total)`)
+        .join("\n")
+
+      const message =
+        `📦 *Items Received — PO #${id}*\n\n` +
+        `${itemLines}\n\n` +
+        `Status: ${result.status.replace("_", " ")}\n` +
+        `Received by: User ${userId}\n` +
+        `Time: ${new Date().toLocaleString()}\n\n` +
+        `[TEST] This is a test notification`
+
+      sendAdminNotificationOnGroup(message).catch((err) =>
+        console.error("WhatsApp notification failed:", err)
+      )
+    }
+
+    return NextResponse.json({ success: result.success, status: result.status })
   } catch (error) {
     console.error("Error receiving items:", error)
     return NextResponse.json({ error: error.message || "Failed to receive items" }, { status: 500 })
   }
 }
-
