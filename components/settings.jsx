@@ -24,7 +24,7 @@ import { getStatusColor, formatDate } from "@/lib/utils"
 export default function Settings() {
   const { user } = useAuth()
   const { toast } = useToast()
-  const [activeSection, setActiveSection] = useState("general")
+  const [activeSection, setActiveSection] = useState("users")
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -814,7 +814,7 @@ export default function Settings() {
             <div className="space-y-4">
               <h4 className="text-sm font-medium">Inventory Alerts</h4>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Low stock notifications</Label>
                     <p className="text-sm text-muted-foreground">Alert when inventory falls below minimum threshold</p>
@@ -849,14 +849,14 @@ export default function Settings() {
                       setNotificationSettings((prev) => ({ ...prev, expiryAlerts: checked }))
                     }
                   />
-                </div>
+                </div> */}
               </div>
             </div>
 
             <div className="space-y-4">
               <h4 className="text-sm font-medium">Order Notifications</h4>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>New order alerts</Label>
                     <p className="text-sm text-muted-foreground">Notify when new orders are received</p>
@@ -891,14 +891,14 @@ export default function Settings() {
                       setNotificationSettings((prev) => ({ ...prev, deliveryConfirmations: checked }))
                     }
                   />
-                </div>
+                </div> */}
               </div>
             </div>
 
             <div className="space-y-4">
               <h4 className="text-sm font-medium">System Notifications</h4>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>System maintenance</Label>
                     <p className="text-sm text-muted-foreground">Notify about scheduled maintenance</p>
@@ -921,7 +921,7 @@ export default function Settings() {
                       setNotificationSettings((prev) => ({ ...prev, securityAlerts: checked }))
                     }
                   />
-                </div>
+                </div> */}
               </div>
             </div>
 
@@ -1226,12 +1226,12 @@ export default function Settings() {
   }
 
   const sections = [
-    { id: "general", label: "General" },
+    // { id: "general", label: "General" },
     { id: "users", label: "Users" },
     { id: "locations", label: "Locations" },
     { id: "suppliers", label: "Suppliers" },
     { id: "customers", label: "Customers" },
-    { id: "notifications", label: "Notifications" },
+    // { id: "notifications", label: "Notifications" },
   ]
 
   return (
