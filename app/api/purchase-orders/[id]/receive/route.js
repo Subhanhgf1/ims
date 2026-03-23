@@ -66,10 +66,25 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const purchaseOrder = await prisma.purchaseOrder.findUnique({
-      where: { id },
-      include: { items: true },
-    })
+    // Fetch PO, its items (with names), the user, and the supplier in one shot
+    const [purchaseOrder, user] = await Promise.all([
+      prisma.purchaseOrder.findUnique({
+        where: { id },
+        include: {
+          items: {
+            include: {
+              rawMaterial: { select: { name: true, sku: true } },
+              finishedGood: { select: { name: true, sku: true } },
+            },
+          },
+          supplier: { select: { name: true } },
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      }),
+    ])
 
     if (!purchaseOrder) {
       return NextResponse.json({ error: "Purchase order not found" }, { status: 404 })
@@ -107,8 +122,13 @@ export async function POST(request, { params }) {
           finishedGoodId: poItem.finishedGoodId,
         })
 
+        // Resolve item name and SKU from the included relation
+        const itemName = poItem.rawMaterial?.name ?? poItem.finishedGood?.name ?? "Unknown Item"
+        const itemSku  = poItem.rawMaterial?.sku  ?? poItem.finishedGood?.sku  ?? ""
+
         receivedSummary.push({
-          name: poItem.name ?? poItem.rawMaterialId ?? poItem.finishedGoodId ?? "Unknown item",
+          name: itemName,
+          sku: itemSku,
           qty: receivedQuantity,
           ordered: poItem.quantity,
           totalReceived: newReceivedTotal,
@@ -143,7 +163,7 @@ export async function POST(request, { params }) {
         where: { purchaseOrderId: id },
       })
 
-      const allReceived = updatedItems.every((item) => item.received >= item.quantity)
+      const allReceived  = updatedItems.every((item) => item.received >= item.quantity)
       const someReceived = updatedItems.some((item) => item.received > 0)
 
       const newStatus = allReceived
@@ -161,18 +181,35 @@ export async function POST(request, { params }) {
     }, { timeout: 30000 })
 
     if (result.status === "RECEIVED" || result.status === "PARTIALLY_RECEIVED") {
+      const divider = "─────────────────────"
+
       const itemLines = result.receivedSummary
-        .map((item) => `  • ${item.name}: +${item.qty} (${item.totalReceived}/${item.ordered} total)`)
-        .join("\n")
+        .map((item) =>
+          `*${item.name}*\n` +
+          `  SKU: ${item.sku}\n` +
+          `  Received: ${item.qty} unit(s)\n` +
+          `  Progress: ${item.totalReceived}/${item.ordered} total`
+        )
+        .join("\n\n")
+
+      const statusLabel =
+        result.status === "RECEIVED" ? "✅ Fully Received" : "🔄 Partially Received"
 
       const message =
-        `📦 *Items Received — PO #${id}*\n\n` +
+        `*[TEST] This is a test notification*` +
+        `📦 *Inv Inbound Received*\n` +
+        `${divider}\n` +
+        `*PO:* #${purchaseOrder.poNumber}\n` +
+        `*Supplier:* ${purchaseOrder.supplier.name}\n` +
+        `*Received by:* ${user?.name ?? "Unknown"}\n` +
+        `*Time:* ${new Date().toLocaleString()}\n` +
+        `${divider}\n\n` +
+        `*Items*\n\n` +
         `${itemLines}\n\n` +
-        `Status: ${result.status.replace("_", " ")}\n` +
-        `Received by: User ${userId}\n` +
-        `Time: ${new Date().toLocaleString()}\n\n` +
-        `[TEST] This is a test notification`
+        `${divider}\n` +
+        `*Status:* ${statusLabel}\n\n`
 
+        // console.log("Prepared WhatsApp message:", message)
       sendAdminNotificationOnGroup(message).catch((err) =>
         console.error("WhatsApp notification failed:", err)
       )
