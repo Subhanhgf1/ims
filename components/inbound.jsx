@@ -166,7 +166,7 @@ export default function Inbound() {
       if (response.ok) {
         toast({
           title: "Success",
-          description: "Purchase order created successfully",
+          description: "Inbound order created successfully",
         })
         setIsCreatePODialogOpen(false)
         resetPOForm()
@@ -447,7 +447,7 @@ export default function Inbound() {
         <div className="flex gap-3">
           <Button onClick={() => setIsCreatePODialogOpen(true)} className="shadow-sm">
             <Plus className="h-4 w-4 mr-2" />
-            Create Purchase Order
+            Create Inbound Order
           </Button>
           {/* <Button variant="outline" onClick={() => setIsCreateReceiptDialogOpen(true)} className="shadow-sm border-gray-300">
             <Package className="h-4 w-4 mr-2" />
@@ -519,7 +519,7 @@ export default function Inbound() {
                 : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             }`}
           >
-            Purchase Orders
+            Inbound Orders
           </button>
           {/* <button
             onClick={() => setActiveTab("direct-receipts")}
@@ -537,8 +537,8 @@ export default function Inbound() {
         {activeTab === "purchase-orders" && (
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="border-b border-gray-100 bg-gray-50/50">
-              <CardTitle className="text-lg">Purchase Orders</CardTitle>
-              <CardDescription>Track and manage all purchase orders</CardDescription>
+              <CardTitle className="text-lg">Inbound Orders</CardTitle>
+              <CardDescription>Track and manage all inbound orders</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
@@ -680,8 +680,8 @@ export default function Inbound() {
       <Dialog open={isCreatePODialogOpen} onOpenChange={setIsCreatePODialogOpen}>
         <DialogContent className="sm:max-w-[700px] pointer-events-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl">Create Purchase Order</DialogTitle>
-            <DialogDescription>Create a new purchase order for incoming goods</DialogDescription>
+            <DialogTitle className="text-xl">Create Inbound Order</DialogTitle>
+            <DialogDescription>Create a new inbound order for incoming goods</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreatePO} className="pointer-events-auto">
             <div className="grid gap-5 py-4 max-h-[60vh] overflow-y-auto">
@@ -832,7 +832,7 @@ export default function Inbound() {
         <DialogContent className="sm:max-w-[700px] pointer-events-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">Create Direct Receipt</DialogTitle>
-            <DialogDescription>Record direct receipt of goods without purchase order</DialogDescription>
+            <DialogDescription>Record direct receipt of goods without inbound order</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateReceipt} className="pointer-events-auto">
             <div className="grid gap-5 py-4 max-h-[60vh] overflow-y-auto">
@@ -988,7 +988,7 @@ export default function Inbound() {
       <Dialog open={isReceiveDialogOpen} onOpenChange={setIsReceiveDialogOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle className="text-xl">Receive Purchase Order</DialogTitle>
+            <DialogTitle className="text-xl">Receive Inbound Order</DialogTitle>
             <DialogDescription>Record the quantities received for PO {selectedOrder?.poNumber}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleReceiveOrder}>
@@ -1088,7 +1088,7 @@ export default function Inbound() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle className="text-xl">{selectedOrder?.poNumber ? "Purchase Order Details" : "Receipt Details"}</DialogTitle>
+            <DialogTitle className="text-xl">{selectedOrder?.poNumber ? "Inbound Order Details" : "Receipt Details"}</DialogTitle>
             <DialogDescription className="text-base">{selectedOrder?.poNumber || selectedOrder?.receiptNumber}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-5 py-4 max-h-[60vh] overflow-y-auto">

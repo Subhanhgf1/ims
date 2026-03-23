@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth"
+
+import { RequiredLabel } from "@/components/ui/required-label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -772,8 +774,8 @@ export default function Outbound() {
                 </div>
                 <div className="space-y-2">
                   {formData.items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-5 gap-2 items-end p-2 border rounded">
-                      <div className="space-y-1">
+                    <div key={index} className="grid grid-cols-4 gap-2 items-end p-2 border rounded">
+                      {/* <div className="space-y-1">
                         <Label className="text-xs">Type</Label>
                         <select
                           value={item.itemType}
@@ -783,17 +785,35 @@ export default function Outbound() {
                           <option value="finished_good">Finished Good</option>
                           <option value="raw_material">Raw Material</option>
                         </select>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Item</Label>
-                        <ItemSelector
-  items={getItemOptions(item.itemType)}
-  value={item.itemId}
-  onValueChange={(value) => updateSOItem(index, "itemId", value)}
-  placeholder="Select item"
-  className="h-8 text-xs"
-/>
-                      </div>
+                      </div> */}
+                      <div className="space-y-1.5 col-span-2">
+      <RequiredLabel className="text-xs font-medium" required>
+        Item
+      </RequiredLabel>
+      <ItemSelector
+        items={getItemOptions(item.itemType)}
+        value={item.itemId}
+        onValueChange={(value) => updateSOItem(index, "itemId", value)}
+        placeholder="Select item"
+        className="h-9 text-xs"
+        style={{ pointerEvents: 'auto' }}
+        required
+      />
+      {/* Selected item details badge */}
+      {item.itemId && (() => {
+        const selectedItem = getItemOptions(item.itemType).find(i => i.id === item.itemId);
+        return selectedItem ? (
+          <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-100 rounded-md">
+            <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+              {selectedItem.sku}
+            </span>
+            <span className="text-xs text-gray-500">
+              {selectedItem.quantity} {selectedItem.unit} in stock
+            </span>
+          </div>
+        ) : null;
+      })()}
+    </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Quantity</Label>
                         <Input
