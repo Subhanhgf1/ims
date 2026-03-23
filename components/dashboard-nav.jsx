@@ -8,11 +8,11 @@ import { useState } from "react"
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
   { id: "inventory", label: "Inventory", icon: Package, href: "/inventory" },
-  { id: "inventory-management", label: "Inventory Mgmt", icon: Boxes, href: "/inventory-management" },
+  // { id: "inventory-management", label: "Inventory Mgmt", icon: Boxes, href: "/inventory-management" },
   { id: "inbound", label: "Inbound", icon: TrendingDown, href: "/inbound" },
   { id: "outbound", label: "Outbound", icon: TrendingUp, href: "/outbound" },
-  { id: "production", label: "Production", icon: Factory, href: "/production" },
-  { id: "reports", label: "Reports", icon: BarChart3, href: "/reports" },
+  // { id: "production", label: "Production", icon: Factory, href: "/production" },
+  // { id: "reports", label: "Reports", icon: BarChart3, href: "/reports" },
   { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
 ]
 

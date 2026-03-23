@@ -70,11 +70,6 @@ export default function Inbound() {
     // Check if redirected from inventory with restock intent
     const params = new URLSearchParams(window.location.search)
     if (params.get("restock") === "true") {
-      toast({
-        title: "Restock",
-        description: "You can create a purchase order to restock the selected items",
-        variant: "info",
-      })
       setActiveTab("purchase-orders")
       setIsCreatePODialogOpen(true)
       // set from data items from local storage and clear it from local storage
@@ -84,7 +79,7 @@ export default function Inbound() {
         setFormData((prev) => ({
           ...prev,
           items: items.map((item) => ({
-            itemType: item.type === "raw_material" ? "raw_material" : "finished_goods", 
+            itemType: item.type === "raw_material" ? "raw_material" : "finished_good", 
             itemId: item.id,
             quantity: (item.minimumStock - item.quantity).toString(),
             unitCost: item.cost ? item.cost.toString() : "0",
@@ -316,15 +311,35 @@ export default function Inbound() {
   const addPOItem = () => {
     setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { itemType: "finished_goods", itemId: "", quantity: "", unitCost: "0" }],
+      items: [...prev.items, { itemType: "finished_good", itemId: "", quantity: "", unitCost: "0" }],
     }))
   }
 
   const updatePOItem = (index, field, value) => {
+ 
+
     setFormData((prev) => ({
       ...prev,
       items: prev.items.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
     }))
+       if (field === "itemId") {
+      const selectedItem = [...rawMaterials, ...finishedGoods].find((item) => item.id === value)
+      if (selectedItem) {
+        const reqQuantity = selectedItem.minimumStock - selectedItem.quantity
+        setFormData((prev) => ({
+          ...prev,
+          items: prev.items.map((item, i) =>
+            i === index
+              ? {
+                  ...item,
+                  quantity: reqQuantity > 0 ? reqQuantity.toString() : "0",
+                }
+              : item,
+          ),
+        }))
+      }
+    }
+  
   }
 
   const removePOItem = (index) => {
@@ -434,10 +449,10 @@ export default function Inbound() {
             <Plus className="h-4 w-4 mr-2" />
             Create Purchase Order
           </Button>
-          <Button variant="outline" onClick={() => setIsCreateReceiptDialogOpen(true)} className="shadow-sm border-gray-300">
+          {/* <Button variant="outline" onClick={() => setIsCreateReceiptDialogOpen(true)} className="shadow-sm border-gray-300">
             <Package className="h-4 w-4 mr-2" />
             Direct Receipt
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -506,7 +521,7 @@ export default function Inbound() {
           >
             Purchase Orders
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab("direct-receipts")}
             className={`px-6 py-2.5 rounded-md text-sm font-medium transition-all ${
               activeTab === "direct-receipts" 
@@ -515,7 +530,7 @@ export default function Inbound() {
             }`}
           >
             Direct Receipts
-          </button>
+          </button> */}
         </div>
 
         {/* Purchase Orders Table */}
@@ -610,7 +625,7 @@ export default function Inbound() {
         )}
 
         {/* Direct Receipts Table */}
-        {activeTab === "direct-receipts" && (
+        {/* {activeTab === "direct-receipts" && (
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="border-b border-gray-100 bg-gray-50/50">
               <CardTitle className="text-lg">Direct Receipts</CardTitle>
@@ -658,7 +673,7 @@ export default function Inbound() {
               </Table>
             </CardContent>
           </Card>
-        )}
+        )} */}
       </div>
 
       {/* Create Purchase Order Dialog */}
