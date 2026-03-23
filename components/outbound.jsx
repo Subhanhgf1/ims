@@ -46,7 +46,7 @@ export default function Outbound() {
   // Form states
   const [formData, setFormData] = useState({
     customerId: "",
-    shipDate: "",
+    shipDate: new Date().toISOString().split("T")[0],
     priority: "MEDIUM",
     shippingAddress: "",
     notes: "",
@@ -450,12 +450,12 @@ export default function Outbound() {
         <div className="flex gap-2">
           <Button onClick={() => setIsCreateSODialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Sales Order
+            Create Outbound Order
           </Button>
-          <Button variant="outline" onClick={() => setIsCreateShipmentDialogOpen(true)}>
+          {/* <Button variant="outline" onClick={() => setIsCreateShipmentDialogOpen(true)}>
             <Send className="h-4 w-4 mr-2" />
             Direct Shipment
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -485,7 +485,7 @@ export default function Outbound() {
             <p className="text-xs text-muted-foreground">Ready for pickup</p>
           </CardContent>
         </Card>
-        <Card>
+        {/* <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">In Transit</CardTitle>
             <Truck className="h-4 w-4 text-muted-foreground" />
@@ -496,8 +496,8 @@ export default function Outbound() {
             </div>
             <p className="text-xs text-muted-foreground">Currently shipping</p>
           </CardContent>
-        </Card>
-        <Card>
+        </Card> */}
+        {/* <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Revenue Today</CardTitle>
             <div className="h-4 w-4 text-muted-foreground">$</div>
@@ -518,7 +518,25 @@ export default function Outbound() {
             </div>
             <p className="text-xs text-muted-foreground">Delivered today</p>
           </CardContent>
+        </Card> */}
+        {/* shipped today */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Outbounded Today</CardTitle>
+            <Truck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {[...salesOrders, ...outboundShipments].filter(
+                (order) =>
+                  order.status === "SHIPPED" &&
+                  new Date(order.updatedAt).toDateString() === new Date().toDateString(),
+              ).length}
+            </div>
+            <p className="text-xs text-muted-foreground">Shipped today</p>
+          </CardContent>
         </Card>
+      
       </div>
 
       {/* Tabs */}
@@ -530,9 +548,9 @@ export default function Outbound() {
               activeTab === "sales-orders" ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            Sales Orders
+            Outbound Orders
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab("direct-shipments")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === "direct-shipments"
@@ -541,15 +559,15 @@ export default function Outbound() {
             }`}
           >
             Direct Shipments
-          </button>
+          </button> */}
         </div>
 
         {/* Sales Orders Table */}
         {activeTab === "sales-orders" && (
           <Card>
             <CardHeader>
-              <CardTitle>Sales Orders</CardTitle>
-              <CardDescription>Track and manage all sales orders</CardDescription>
+              <CardTitle>Outbound Orders</CardTitle>
+              <CardDescription>Track and manage all outbound orders</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -612,7 +630,7 @@ export default function Outbound() {
         )}
 
         {/* Direct Shipments Table */}
-        {activeTab === "direct-shipments" && (
+        {/* {activeTab === "direct-shipments" && (
           <Card>
             <CardHeader>
               <CardTitle>Direct Shipments</CardTitle>
@@ -665,15 +683,15 @@ export default function Outbound() {
               </Table>
             </CardContent>
           </Card>
-        )}
+        )} */}
       </div>
 
       {/* Create Sales Order Dialog */}
       <Dialog open={isCreateSODialogOpen} onOpenChange={setIsCreateSODialogOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>Create Sales Order</DialogTitle>
-            <DialogDescription>Create a new sales order for outgoing goods</DialogDescription>
+            <DialogTitle>Create Outbound Order</DialogTitle>
+            <DialogDescription>Create a new outbound order for outgoing goods</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateSO}>
             <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
@@ -722,19 +740,7 @@ export default function Outbound() {
                     <option value="URGENT">Urgent</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="shippingAddress">Shipping Address</Label>
-                <Textarea
-                  id="shippingAddress"
-                  value={formData.shippingAddress}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, shippingAddress: e.target.value }))}
-                  placeholder="Enter complete shipping address"
-                />
-              </div>
-
-              <div className="space-y-2">
+                          <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea
                   id="notes"
@@ -743,6 +749,19 @@ export default function Outbound() {
                   placeholder="Additional notes or special instructions"
                 />
               </div>
+              </div>
+
+              {/* <div className="space-y-2">
+                <Label htmlFor="shippingAddress">Shipping Address</Label>
+                <Textarea
+                  id="shippingAddress"
+                  value={formData.shippingAddress}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, shippingAddress: e.target.value }))}
+                  placeholder="Enter complete shipping address"
+                />
+              </div> */}
+
+    
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -824,7 +843,7 @@ export default function Outbound() {
       </Dialog>
 
       {/* Create Direct Shipment Dialog */}
-      <Dialog open={isCreateShipmentDialogOpen} onOpenChange={setIsCreateShipmentDialogOpen}>
+      {/* <Dialog open={isCreateShipmentDialogOpen} onOpenChange={setIsCreateShipmentDialogOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
             <DialogTitle>Create Direct Shipment</DialogTitle>
@@ -963,7 +982,7 @@ export default function Outbound() {
             </DialogFooter>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {/* Process Order Dialog */}
       <Dialog open={isProcessDialogOpen} onOpenChange={setIsProcessDialogOpen}>
