@@ -14,10 +14,17 @@ export async function POST(request, { params }) {
     }
 
     // Fetch sales order
-    const salesOrder = await prisma.salesOrder.findUnique({
-      where: { id },
-      include: { items: true },
-    })
+ const salesOrder = await prisma.salesOrder.findUnique({
+  where: { id },
+  include: {
+    items: {
+      include: {
+        finishedGood: { select: { name: true, sku: true } }, // ✅
+        rawMaterial: { select: { name: true, sku: true } },  // ✅
+      },
+    },
+  },
+})
 
     if (!salesOrder) {
       return NextResponse.json({ error: "Sales order not found" }, { status: 404 })
