@@ -10,6 +10,10 @@ export async function GET() {
         location: {
           select: { code: true, zone: true },
         },
+        category: {
+          select: { name: true },
+        },
+        
       },
       orderBy: { name: "asc" },
     })

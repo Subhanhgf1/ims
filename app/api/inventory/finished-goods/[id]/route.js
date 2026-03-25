@@ -30,7 +30,7 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params
     const data = await request.json()
-    const { name, sku, description, unit, cost, price, minimumStock, locationId, imageUrl } = data
+    const { name, sku, description, unit, cost, price, minimumStock, locationId, imageUrl, categoryId } = data
 
     const finishedGood = await prisma.finishedGood.update({
       where: { id },
@@ -44,6 +44,7 @@ export async function PUT(request, { params }) {
         minimumStock: Number.parseInt(minimumStock),
         locationId,
         imageUrl: imageUrl || null,
+        categoryId,
       },
       include: {
         location: {

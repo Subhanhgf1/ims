@@ -21,8 +21,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Send } from "lucide-react"
+import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2 } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
+import { generateShippingReportPDF } from "@/lib/pdf-generator"
 
 export default function Outbound() {
   const { user } = useAuth()
@@ -44,6 +45,59 @@ export default function Outbound() {
   const [isShipDialogOpen, setIsShipDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [generatingReport, setGeneratingReport] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+
+const handleDeleteOrder = async (orderId) => {
+  if (!confirm("Are you sure you want to delete this order?")) return
+
+  try {
+    setDeletingId(orderId)
+    const response = await fetch(`/api/sales-orders/${orderId}`, {
+      method: "DELETE",
+    })
+
+    if (response.ok) {
+      toast({ title: "Success", description: "Order deleted successfully" })
+      fetchData()
+    } else {
+      const error = await response.json()
+      throw new Error(error.error)
+    }
+  } catch (error) {
+    toast({ title: "Error", description: error.message, variant: "destructive" })
+  } finally {
+    setDeletingId(null)
+  }
+}
+
+const generateShippingReport = async (orderId) => {
+  try {
+    setGeneratingReport(true)
+    const response = await fetch(`/api/reports/shipping/${orderId}`)
+
+    if (response.ok) {
+      const reportData = await response.json()
+      const pdf = generateShippingReportPDF(reportData)
+      pdf.save(`shipping-report-${reportData.salesOrder.soNumber}.pdf`)
+
+      toast({
+        title: "Success",
+        description: "Shipping report generated successfully",
+      })
+    } else {
+      throw new Error("Failed to generate report")
+    }
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to generate shipping report",
+      variant: "destructive",
+    })
+  } finally {
+    setGeneratingReport(false)
+  }
+}
 
   // Form states
   const [formData, setFormData] = useState({
@@ -606,23 +660,52 @@ export default function Outbound() {
                       </TableCell>
                       <TableCell>{order.items?.length || 0}</TableCell>
                       {user.role === "ADMIN" && <TableCell>{formatCurrency(order.totalValue)}</TableCell>}
+                  
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openViewDialog(order)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {order.status === "PREPARING" && (
+  <div className="flex gap-2">
+    <Button variant="outline" size="sm" onClick={() => openViewDialog(order)}>
+      <Eye className="h-4 w-4" />
+    </Button>
+      {/* {order.status === "PREPARING" && (
                             <Button variant="outline" size="sm" onClick={() => openProcessDialog(order)}>
                               Process
                             </Button>
-                          )}
-                          {order.status === "READY" && (
-                            <Button variant="outline" size="sm" onClick={() => openShipDialog(order)}>
-                              Ship
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+                          )} */}
+    {(order.status === "PREPARING" || order.status === "READY") && (
+      <Button variant="outline" size="sm" onClick={() => openShipDialog(order)}>
+        Ship
+      </Button>
+    )}
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => generateShippingReport(order.id)}
+      disabled={generatingReport}
+      className="h-8 w-8 p-0"
+    >
+      {generatingReport ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <Download className="h-4 w-4" />
+      )}
+    </Button>
+      {order.status !== "SHIPPED" && order.status !== "DELIVERED" && (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => handleDeleteOrder(order.id)}
+        disabled={deletingId === order.id}
+        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:border-red-300"
+      >
+        {deletingId === order.id ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Trash2 className="h-4 w-4" />
+        )}
+      </Button>
+    )}
+  </div>
+</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

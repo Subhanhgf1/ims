@@ -196,7 +196,6 @@ export async function POST(request, { params }) {
         result.status === "RECEIVED" ? "✅ Fully Received" : "🔄 Partially Received"
 
       const message =
-        `*[TEST] This is a test notification*` +
         `📦 *Inv Inbound Received*\n` +
         `${divider}\n` +
         `*PO:* #${purchaseOrder.poNumber}\n` +

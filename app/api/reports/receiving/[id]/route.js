@@ -1,3 +1,4 @@
+// api/reports/receiving/[id]/route.js
 export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"

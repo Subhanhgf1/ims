@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { sendAdminNotificationOnGroup } from "@/lib/utils" // adjust path if needed
 
 export async function POST(request, { params }) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Fetch order with items first (outside transaction to save time)
+    // Fetch sales order
     const salesOrder = await prisma.salesOrder.findUnique({
       where: { id },
       include: { items: true },
@@ -22,11 +23,14 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Sales order not found" }, { status: 404 })
     }
 
-    if (salesOrder.status !== "READY") {
-      return NextResponse.json({ error: "Sales order is not ready for shipping" }, { status: 400 })
+    if (!["PREPARING", "READY"].includes(salesOrder.status)) {
+      return NextResponse.json(
+        { error: "Sales order cannot be shipped in its current status" },
+        { status: 400 }
+      )
     }
 
-    // Prepare DB operations
+    const shippedSummary = []
     const itemUpdates = []
     const finishedGoodUpdates = []
     const rawMaterialUpdates = []
@@ -37,8 +41,11 @@ export async function POST(request, { params }) {
       if (!orderItem) continue
 
       const shippedQty = Number.parseInt(shippedItem.shippedQuantity)
-      if (!shippedQty) continue
+      if (!shippedQty || shippedQty <= 0) continue
 
+      const newShippedTotal = (orderItem.shipped || 0) + shippedQty
+
+      // Update shipped quantity
       itemUpdates.push(
         prisma.salesOrderItem.update({
           where: { id: shippedItem.itemId },
@@ -46,6 +53,7 @@ export async function POST(request, { params }) {
         })
       )
 
+      // Deduct inventory
       if (orderItem.finishedGoodId) {
         finishedGoodUpdates.push(
           prisma.finishedGood.update({
@@ -62,73 +70,117 @@ export async function POST(request, { params }) {
         )
       }
 
-      // finishedGoodUpdates.push(
-      //   prisma.finishedGood.update({
-      //     where: { id: orderItem.finishedGoodId },
-      //     data: { quantity: { decrement: shippedQty } },
-      //   })
-      // )
+      // Inventory adjustment log
+      const adjustment = {
+        type: "DECREASE",
+        quantity: -shippedQty,
+        reason: `Sales order ${salesOrder.soNumber} shipped`,
+        reference: salesOrder.soNumber,
+        userId,
+      }
 
-  const adjustment = {
-  type: "DECREASE",
-  quantity: -shippedQty,
-  reason: `Sales order ${salesOrder.soNumber} shipped`,
-  reference: salesOrder.soNumber,
-  userId,
-}
+      if (orderItem.finishedGoodId) {
+        adjustment.finishedGoodId = orderItem.finishedGoodId
+      } else if (orderItem.rawMaterialId) {
+        adjustment.rawMaterialId = orderItem.rawMaterialId
+      }
 
-// Attach only the relevant id
-if (orderItem.finishedGoodId) {
-  adjustment.finishedGoodId = orderItem.finishedGoodId
-} else if (orderItem.rawMaterialId) {
-  adjustment.rawMaterialId = orderItem.rawMaterialId
-}
+      adjustments.push(adjustment)
 
-adjustments.push(adjustment)
+      // Build summary
+      const itemName =
+        orderItem.finishedGood?.name ?? orderItem.rawMaterial?.name ?? "Unknown Item"
 
+      const itemSku =
+        orderItem.finishedGood?.sku ?? orderItem.rawMaterial?.sku ?? ""
+
+      shippedSummary.push({
+        name: itemName,
+        sku: itemSku,
+        qty: shippedQty,
+        ordered: orderItem.quantity,
+        totalShipped: newShippedTotal,
+      })
     }
 
-    // Run transaction with parallel updates + bulk insert
+    // Transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Run updates in parallel
       await Promise.all([
-        ...itemUpdates.map((op) => op),
-        ...finishedGoodUpdates.map((op) => op),
-        ...rawMaterialUpdates.map((op) => op),
+        ...itemUpdates,
+        ...finishedGoodUpdates,
+        ...rawMaterialUpdates,
       ])
 
-      // Insert adjustments in bulk
       if (adjustments.length > 0) {
         await tx.inventoryAdjustment.createMany({ data: adjustments })
       }
 
-      // Check if all items are fully shipped
       const updatedItems = await tx.salesOrderItem.findMany({
         where: { salesOrderId: id },
       })
 
-      const allShipped = updatedItems.every((item) => item.shipped >= item.quantity)
+      const allShipped = updatedItems.every((i) => i.shipped >= i.quantity)
 
-      // Update sales order status
-      return tx.salesOrder.update({
+      const updatedOrder = await tx.salesOrder.update({
         where: { id },
         data: { status: allShipped ? "SHIPPED" : "PREPARING" },
         include: {
           customer: { select: { name: true } },
           createdBy: { select: { name: true } },
-          items: {
-            include: {
-              finishedGood: { select: { name: true, sku: true } },
-              rawMaterial: { select: { name: true, sku: true } },
-            },
-          },
         },
       })
-    }, { timeout: 30000 }) // increase timeout just in case
+
+      return {
+        ...updatedOrder,
+        status: allShipped ? "SHIPPED" : "PREPARING",
+        shippedSummary,
+      }
+    }, { timeout: 30000 })
+
+    // ✅ WhatsApp Notification
+    if (result.status === "SHIPPED" || result.status === "PREPARING") {
+      const divider = "─────────────────────"
+
+      const itemLines = result.shippedSummary
+        .map(
+          (item) =>
+            `*${item.name}*\n` +
+            `  SKU: ${item.sku}\n` +
+            `  Shipped: ${item.qty} unit(s)\n` +
+            `  Progress: ${item.totalShipped}/${item.ordered} total`
+        )
+        .join("\n\n")
+
+      const statusLabel =
+        result.status === "SHIPPED"
+          ? "✅ Fully Shipped"
+          : "🚚 Partially Shipped"
+
+      const message =
+        `*[TEST] This is a test notification*\n` +
+        `📤 *Outbound Order Shipped*\n` +
+        `${divider}\n` +
+        `*SO:* #${result.soNumber}\n` +
+        `*Customer:* ${result.customer?.name ?? "Unknown"}\n` +
+        `*Processed by:* ${result.createdBy?.name ?? "Unknown"}\n` +
+        `*Time:* ${new Date().toLocaleString()}\n` +
+        `${divider}\n\n` +
+        `*Items*\n\n` +
+        `${itemLines}\n\n` +
+        `${divider}\n` +
+        `*Status:* ${statusLabel}\n\n`
+
+      sendAdminNotificationOnGroup(message).catch((err) =>
+        console.error("WhatsApp notification failed:", err)
+      )
+    }
 
     return NextResponse.json(result)
   } catch (error) {
     console.error("Error shipping sales order:", error)
-    return NextResponse.json({ error: "Failed to ship sales order" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to ship sales order" },
+      { status: 500 }
+    )
   }
 }

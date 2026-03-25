@@ -105,6 +105,17 @@ model RawMaterial {
   @@map("raw_materials")
 }
 
+
+model Category {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  finishedGoods FinishedGood[]
+
+  @@map("categories")
+}
+
 model FinishedGood {
   id                      String                   @id @default(cuid())
   name                    String
@@ -120,6 +131,8 @@ model FinishedGood {
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   locationId              String
+  categoryId              String?        
+  category                Category?                 @relation(fields: [categoryId], references: [id], onDelete: Restrict) 
   location                Location                 @relation(fields: [locationId], references: [id], onDelete: Restrict)
   inboundReceiptItems     InboundReceiptItem[]     @relation("InboundFinishedGood")
   inventoryAdjustments    InventoryAdjustment[]

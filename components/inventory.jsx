@@ -196,8 +196,11 @@ export default function Inventory() {
 
   const [formData, setFormData] = useState({
     name: "", sku: "", description: "", unit: "", cost: "", price: "",
-    minimumStock: "", supplierId: "", locationId: "", imageUrl: "",
+    minimumStock: "", supplierId: "", locationId: "", imageUrl: "", catergoryId: ""
   })
+
+  const [categories, setCategories] = useState([])
+const [categoryFilter, setCategoryFilter] = useState("all")
 
   useEffect(() => { fetchData() }, [])
 
@@ -211,26 +214,28 @@ export default function Inventory() {
   }, [selectAll, activeTab])
 
   const fetchData = async () => {
-    try {
-      const [rawMaterialsRes, finishedGoodsRes, suppliersRes, locationsRes] = await Promise.all([
-        fetch("/api/inventory/raw-materials"),
-        fetch("/api/inventory/finished-goods"),
-        fetch("/api/suppliers"),
-        fetch("/api/locations"),
-      ])
-      const [rawMaterialsData, finishedGoodsData, suppliersData, locationsData] = await Promise.all([
-        rawMaterialsRes.json(), finishedGoodsRes.json(), suppliersRes.json(), locationsRes.json(),
-      ])
-      setRawMaterials(rawMaterialsData)
-      setFinishedGoods(finishedGoodsData)
-      setSuppliers(suppliersData)
-      setLocations(locationsData)
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to fetch inventory data", variant: "destructive" })
-    } finally {
-      setLoading(false)
-    }
+  try {
+    const [rawMaterialsRes, finishedGoodsRes, suppliersRes, locationsRes, categoriesRes] = await Promise.all([
+      fetch("/api/inventory/raw-materials"),
+      fetch("/api/inventory/finished-goods"),
+      fetch("/api/suppliers"),
+      fetch("/api/locations"),
+      fetch("/api/categories"),
+    ])
+    const [rawMaterialsData, finishedGoodsData, suppliersData, locationsData, categoriesData] = await Promise.all([
+      rawMaterialsRes.json(), finishedGoodsRes.json(), suppliersRes.json(), locationsRes.json(), categoriesRes.json(),
+    ])
+    setRawMaterials(rawMaterialsData)
+    setFinishedGoods(finishedGoodsData)
+    setSuppliers(suppliersData)
+    setLocations(locationsData)
+    setCategories(categoriesData.data || [])
+  } catch (error) {
+    toast({ title: "Error", description: "Failed to fetch inventory data", variant: "destructive" })
+  } finally {
+    setLoading(false)
   }
+}
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -276,22 +281,22 @@ export default function Inventory() {
 
   const resetForm = () => {
     setFormData({ name: "", sku: "", description: "", unit: "", cost: "", price: "",
-      minimumStock: "", supplierId: "", locationId: "", imageUrl: "" })
+      minimumStock: "", supplierId: "", locationId: "", imageUrl: "" , categoryId :""})
   }
 
-  const openEditDialog = (item) => {
-    setLoadingEditId(item.id)
-    setEditingItem(item)
-    setFormData({
-      name: item.name || "", sku: item.sku || "", description: item.description || "",
-      unit: item.unit || "", cost: item.cost?.toString() || "", price: item.price?.toString() || "",
-      minimumStock: item.minimumStock?.toString() || "", supplierId: item.supplierId || "",
-      locationId: item.locationId || "", imageUrl: item.imageUrl || "",
-    })
-    setIsAddDialogOpen(true)
-    // Brief delay to show spinner, then clear
-    setTimeout(() => setLoadingEditId(null), 300)
-  }
+ const openEditDialog = (item) => {
+  setLoadingEditId(item.id)
+  setEditingItem(item)
+  setFormData({
+    name: item.name || "", sku: item.sku || "", description: item.description || "",
+    unit: item.unit || "", cost: item.cost?.toString() || "", price: item.price?.toString() || "",
+    minimumStock: item.minimumStock?.toString() || "", supplierId: item.supplierId || "",
+    locationId: item.locationId || "", imageUrl: item.imageUrl || "",
+    categoryId: item.categoryId || "",
+  })
+  setIsAddDialogOpen(true)
+  setTimeout(() => setLoadingEditId(null), 300)
+}
 
   const openAdvancedModal = (item) => {
     setLoadingAdvancedId(item.id)
@@ -334,12 +339,13 @@ export default function Inventory() {
     return matchesSearch && matchesStatusFilter(item) && matchesSupplier && matchesLocation
   })
 
-  const filteredFinishedGoods = finishedGoods.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
-    return matchesSearch && matchesStatusFilter(item) && matchesLocation
-  })
+const filteredFinishedGoods = finishedGoods.filter((item) => {
+  const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
+  const matchesCategory = categoryFilter === "all" || item.categoryId === categoryFilter
+  return matchesSearch && matchesStatusFilter(item) && matchesLocation && matchesCategory
+})
 
   const handleItemSelect = (itemId) => {
     setSelectedItems((prev) => prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId])
@@ -440,9 +446,14 @@ export default function Inventory() {
     setSelectAll(false)
   }
 
-  const hasActiveFilters = statusFilters.size > 0 || supplierFilter !== "all" || locationFilter !== "all"
-  const clearAllFilters = () => { setStatusFilters(new Set()); setSupplierFilter("all"); setLocationFilter("all") }
+const hasActiveFilters = statusFilters.size > 0 || supplierFilter !== "all" || locationFilter !== "all" || categoryFilter !== "all"
 
+const clearAllFilters = () => {
+  setStatusFilters(new Set())
+  setSupplierFilter("all")
+  setLocationFilter("all")
+  setCategoryFilter("all")
+}
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -518,23 +529,38 @@ export default function Inventory() {
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="minimumStock">Minimum Stock</Label>
-                    <Input id="minimumStock" type="number" value={formData.minimumStock} onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label htmlFor="locationId">Location *</Label>
-                    <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })}>
-                      <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
-                      <SelectContent>
-                        {locations.map((location) => (
-                          <SelectItem key={location.id} value={location.id}>{location.code} - {location.zone}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+               <div className="grid grid-cols-2 gap-4">
+  <div>
+    <Label htmlFor="minimumStock">Minimum Stock</Label>
+    <Input id="minimumStock" type="number" value={formData.minimumStock} onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value })} />
+  </div>
+  <div>
+    <Label htmlFor="locationId">Location *</Label>
+    <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })}>
+      <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
+      <SelectContent>
+        {locations.map((location) => (
+          <SelectItem key={location.id} value={location.id}>{location.code} - {location.zone}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+</div>
+
+{activeTab === "finished-goods" && (
+  <div>
+    <Label htmlFor="categoryId">Category</Label>
+    <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
+      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">No Category</SelectItem>
+        {categories.map((cat) => (
+          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
                 {activeTab === "raw-materials" && (
                   <div>
                     <Label htmlFor="supplierId">Supplier *</Label>
@@ -625,6 +651,17 @@ export default function Inventory() {
               ))}
             </SelectContent>
           </Select>
+          {activeTab === "finished-goods" && (
+  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+    <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="all">All Categories</SelectItem>
+      {categories.map((cat) => (
+        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+)}
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearAllFilters}>Clear Filters</Button>
           )}
@@ -659,6 +696,14 @@ export default function Inventory() {
                 </button>
               </Badge>
             )}
+            {categoryFilter !== "all" && (
+  <Badge variant="secondary" className="flex items-center gap-1 pr-1">
+    {categories.find((c) => c.id === categoryFilter)?.name}
+    <button type="button" onClick={() => setCategoryFilter("all")} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
+      <X className="h-3 w-3" />
+    </button>
+  </Badge>
+)}
           </div>
         )}
       </div>
@@ -787,11 +832,14 @@ export default function Inventory() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <Package className="h-4 w-4" />
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <Badge variant="outline">{item.sku}</Badge>
-                          {getStatusBadge(item)}
-                        </div>
+  <Package className="h-4 w-4" />
+  <h3 className="font-semibold">{item.name}</h3>
+  <Badge variant="outline">{item.sku}</Badge>
+  {item.category && (
+    <Badge variant="secondary" className="text-xs">{item.category.name}</Badge>
+  )}
+  {getStatusBadge(item)}
+</div>
                         <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                           <div><span className="font-medium">Quantity:</span> {item.quantity} {item.unit}</div>
