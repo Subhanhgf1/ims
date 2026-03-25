@@ -164,7 +164,6 @@ export async function POST(request, { params }) {
           : "🚚 Partially Shipped"
 
       const message =
-        `*[TEST] This is a test notification*\n` +
         `📤 *Outbound Order Shipped*\n` +
         `${divider}\n` +
         `*SO:* #${result.soNumber}\n` +
