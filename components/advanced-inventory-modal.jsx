@@ -65,6 +65,8 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
         usageRes.json(),
       ])
 
+      console.log("usage", usage)
+
       setHistory({ adjustments, receiving, usage })
     } catch (error) {
       toast({
@@ -468,14 +470,14 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="font-medium">
-                                -{record.consumedQuantity} {item.unit}
+                                -{record.shipped} {item.unit}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                Production: {record.productionOrder?.productionNumber}
+                                Received By: {record.salesOrder?.customer?.name}
                               </p>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {/* {format(new Date(record.createdAt), "MMM dd")} */}
+                              {format(new Date(record.salesOrder?.shipDate), "MMM dd")}
                             </p>
                           </div>
                         </div>

@@ -7,15 +7,20 @@ export async function GET(request, { params }) {
   try {
     const { id } = params
 
-    const receivingHistory = await prisma.receivingRecord.findMany({
-      where: { finishedGoodId: id },
-      include: {
-        purchaseOrder: { select: { poNumber: true } },
-        user: { select: { name: true } },
-      },
-      orderBy: { receivedDate: "desc" },
-      take: 20,
-    })
+ const receivingHistory = await prisma.receivingRecord.findMany({
+  where: {
+    finishedGoodId: id,
+    purchaseOrder: {
+      status: { in: ["PARTIALLY_RECEIVED", "RECEIVED"] },
+    },
+  },
+  include: {
+    purchaseOrder: { select: { poNumber: true } },
+    user: { select: { name: true } },
+  },
+  orderBy: { receivedDate: "desc" },
+  take: 20,
+})
 
     return NextResponse.json(receivingHistory)
   } catch (error) {

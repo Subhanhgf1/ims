@@ -8,19 +8,27 @@ export async function GET(request, { params }) {
     const { id } = params
 
     // For finished goods, usage would be from sales orders
-    const usageHistory = await prisma.salesOrderItem.findMany({
-      where: { finishedGoodId: id },
-      include: {
-        salesOrder: {
-          select: {
-            soNumber: true,
-            customer: { select: { name: true } },
-          },
-        },
+  const usageHistory = await prisma.salesOrderItem.findMany({
+  where: {
+    finishedGoodId: id,
+    salesOrder: {
+      status: { in: ["PREPARING", "SHIPPED"] },
+      
+    },
+  },
+  include: {
+    salesOrder: {
+      select: {
+        soNumber: true,
+        createdAt: true,
+        shipDate: true,
+        customer: { select: { name: true } },
       },
-      orderBy: { salesOrder: { createdAt: "desc" } },
-      take: 20,
-    })
+    },
+  },
+  orderBy: { salesOrder: { createdAt: "desc" } },
+  take: 20,
+})
 
     return NextResponse.json(usageHistory)
   } catch (error) {
