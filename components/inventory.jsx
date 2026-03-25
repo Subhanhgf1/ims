@@ -913,6 +913,7 @@ const clearAllFilters = () => {
         onUpdate={fetchData}
         suppliers={suppliers}
         locations={locations}
+        categories={categories}
       />
     </div>
   )
