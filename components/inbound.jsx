@@ -19,7 +19,7 @@ import { RequiredLabel } from "@/components/ui/required-label"
 import { ItemSelector } from "@/components/ui/item-selector"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User } from "lucide-react"
+import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User, Pencil } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateReceivingReportPDF } from "@/lib/pdf-generator"
 import { add } from "date-fns"
@@ -44,6 +44,7 @@ export default function Inbound() {
   const [isCreateReceiptDialogOpen, setIsCreateReceiptDialogOpen] = useState(false)
   const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isEditPODialogOpen, setIsEditPODialogOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
 
   // Form states
@@ -427,6 +428,52 @@ export default function Inbound() {
     return order.status === "PENDING" || order.status === "PARTIALLY_RECEIVED"
   }
 
+  const openEditDialog = (order) => {
+    setSelectedOrder(order)
+    setFormData({
+      supplierId: order.supplierId,
+      expectedDate: new Date(order.expectedDate).toISOString().split("T")[0],
+      notes: order.notes || "",
+      items: order.items.map((item) => ({
+        itemType: item.itemType,
+        itemId: item.rawMaterialId || item.finishedGoodId,
+        quantity: item.quantity.toString(),
+        unitCost: item.unitCost.toString(),
+      })),
+    })
+    setIsEditPODialogOpen(true)
+  }
+
+  const handleEditPO = async (e) => {
+    e.preventDefault()
+    if (!formData.supplierId || !formData.expectedDate || !formData.items.length) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
+      return
+    }
+    try {
+      setSubmitting(true)
+      const response = await fetch(`/api/purchase-orders/${selectedOrder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (response.ok) {
+        toast({ title: "Success", description: "Inbound order updated successfully" })
+        setIsEditPODialogOpen(false)
+        setSelectedOrder(null)
+        resetPOForm()
+        fetchData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -595,6 +642,11 @@ export default function Inbound() {
                             <Button variant="outline" size="sm" onClick={() => openViewDialog(order)} className="h-8 w-8 p-0">
                               <Eye className="h-4 w-4" />
                             </Button>
+                            {order.status === "PENDING" && (
+                              <Button variant="outline" size="sm" onClick={() => openEditDialog(order)} className="h-8 w-8 p-0">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                             {canReceive(order) && (
                               <Button variant="outline" size="sm" onClick={() => openReceiveDialog(order)} className="h-8">
                                 Receive
@@ -675,6 +727,110 @@ export default function Inbound() {
           </Card>
         )} */}
       </div>
+
+      {/* Edit Purchase Order Dialog */}
+      <Dialog open={isEditPODialogOpen} onOpenChange={(open) => { setIsEditPODialogOpen(open); if (!open) { setSelectedOrder(null); resetPOForm() } }}>
+        <DialogContent className="sm:max-w-[700px] pointer-events-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Edit Inbound Order</DialogTitle>
+            <DialogDescription>Edit order {selectedOrder?.poNumber}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditPO} className="pointer-events-auto">
+            <div className="grid gap-5 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <RequiredLabel htmlFor="edit-supplier" required>Supplier</RequiredLabel>
+                  <select
+                    id="edit-supplier"
+                    value={formData.supplierId}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, supplierId: e.target.value }))}
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    required
+                  >
+                    <option value="">Select supplier</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <RequiredLabel htmlFor="edit-expectedDate" required>Expected Date</RequiredLabel>
+                  <Input
+                    id="edit-expectedDate"
+                    type="date"
+                    value={formData.expectedDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, expectedDate: e.target.value }))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <RequiredLabel htmlFor="edit-notes">Notes</RequiredLabel>
+                <Textarea
+                  id="edit-notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Additional notes"
+                  className="border-gray-300 h-16"
+                />
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <RequiredLabel className="text-base font-semibold">Order Items</RequiredLabel>
+                  <Button type="button" variant="outline" onClick={addPOItem}>
+                    <Plus className="h-4 w-4 mr-2" />Add Item
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {formData.items.map((item, index) => (
+                    <div key={index} className="grid grid-cols-4 gap-3 items-end p-4 border border-gray-200 rounded-lg bg-gray-50/30">
+                      <div className="space-y-1.5 col-span-2">
+                        <RequiredLabel className="text-xs font-medium" required>Item</RequiredLabel>
+                        <ItemSelector
+                          items={getItemOptions(item.itemType)}
+                          value={item.itemId}
+                          onValueChange={(value) => updatePOItem(index, "itemId", value)}
+                          placeholder="Select item"
+                          className="h-9 text-xs"
+                          required
+                        />
+                        {item.itemId && (() => {
+                          const selectedItem = getItemOptions(item.itemType).find(i => i.id === item.itemId)
+                          return selectedItem ? (
+                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-100 rounded-md">
+                              <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">{selectedItem.sku}</span>
+                              <span className="text-xs text-gray-500">{selectedItem.quantity} {selectedItem.unit} in stock</span>
+                            </div>
+                          ) : null
+                        })()}
+                      </div>
+                      <div className="space-y-1.5">
+                        <RequiredLabel className="text-xs font-medium" required>Quantity</RequiredLabel>
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updatePOItem(index, "quantity", e.target.value)}
+                          className="h-9 text-xs border-gray-300"
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={() => removePOItem(index)} className="h-9">Remove</Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditPODialogOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Purchase Order Dialog */}
       <Dialog open={isCreatePODialogOpen} onOpenChange={setIsCreatePODialogOpen}>

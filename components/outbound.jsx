@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2 } from "lucide-react"
+import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2, Pencil } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateShippingReportPDF } from "@/lib/pdf-generator"
 
@@ -44,6 +44,7 @@ export default function Outbound() {
   const [isProcessDialogOpen, setIsProcessDialogOpen] = useState(false)
   const [isShipDialogOpen, setIsShipDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isEditSODialogOpen, setIsEditSODialogOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [generatingReport, setGeneratingReport] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
@@ -433,6 +434,54 @@ const generateShippingReport = async (orderId) => {
     setIsViewDialogOpen(true)
   }
 
+  const openEditDialog = (order) => {
+    setSelectedOrder(order)
+    setFormData({
+      customerId: order.customerId,
+      shipDate: new Date(order.shipDate).toISOString().split("T")[0],
+      priority: order.priority || "MEDIUM",
+      shippingAddress: order.shippingAddress || "",
+      notes: order.notes || "",
+      items: order.items.map((item) => ({
+        itemType: item.finishedGoodId ? "finished_good" : "raw_material",
+        itemId: item.finishedGoodId || item.rawMaterialId,
+        quantity: item.quantity.toString(),
+        unitPrice: item.unitPrice?.toString() || "0",
+      })),
+    })
+    setIsEditSODialogOpen(true)
+  }
+
+  const handleEditSO = async (e) => {
+    e.preventDefault()
+    if (!formData.customerId || !formData.shipDate || !formData.items.length) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
+      return
+    }
+    try {
+      setSubmitting(true)
+      const response = await fetch(`/api/sales-orders/${selectedOrder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (response.ok) {
+        toast({ title: "Success", description: "Outbound order updated successfully" })
+        setIsEditSODialogOpen(false)
+        setSelectedOrder(null)
+        resetSOForm()
+        fetchData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const resetSOForm = () => {
     setFormData({
       customerId: "",
@@ -666,6 +715,11 @@ const generateShippingReport = async (orderId) => {
     <Button variant="outline" size="sm" onClick={() => openViewDialog(order)}>
       <Eye className="h-4 w-4" />
     </Button>
+    {(order.status === "PREPARING" || order.status === "READY") && (
+      <Button variant="outline" size="sm" onClick={() => openEditDialog(order)} className="h-8 w-8 p-0">
+        <Pencil className="h-4 w-4" />
+      </Button>
+    )}
       {/* {order.status === "PREPARING" && (
                             <Button variant="outline" size="sm" onClick={() => openProcessDialog(order)}>
                               Process
@@ -770,6 +824,121 @@ const generateShippingReport = async (orderId) => {
           </Card>
         )} */}
       </div>
+
+      {/* Edit Sales Order Dialog */}
+      <Dialog open={isEditSODialogOpen} onOpenChange={(open) => { setIsEditSODialogOpen(open); if (!open) { setSelectedOrder(null); resetSOForm() } }}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Edit Outbound Order</DialogTitle>
+            <DialogDescription>Edit order {selectedOrder?.soNumber}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSO}>
+            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-customer">Customer *</Label>
+                  <select
+                    id="edit-customer"
+                    value={formData.customerId}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, customerId: e.target.value }))}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    required
+                  >
+                    <option value="">Select customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>{customer.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-shipDate">Ship Date *</Label>
+                  <Input
+                    id="edit-shipDate"
+                    type="date"
+                    value={formData.shipDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, shipDate: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-priority">Priority</Label>
+                  <select
+                    id="edit-priority"
+                    value={formData.priority}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, priority: e.target.value }))}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-notes">Notes</Label>
+                  <Textarea
+                    id="edit-notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Additional notes"
+                  />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <Label>Order Items</Label>
+                  <Button type="button" variant="outline" onClick={addSOItem}>Add Item</Button>
+                </div>
+                <div className="space-y-2">
+                  {formData.items.map((item, index) => (
+                    <div key={index} className="grid grid-cols-4 gap-2 items-end p-2 border rounded">
+                      <div className="space-y-1.5 col-span-2">
+                        <RequiredLabel className="text-xs font-medium" required>Item</RequiredLabel>
+                        <ItemSelector
+                          items={getItemOptions(item.itemType)}
+                          value={item.itemId}
+                          onValueChange={(value) => updateSOItem(index, "itemId", value)}
+                          placeholder="Select item"
+                          className="h-9 text-xs"
+                          required
+                        />
+                        {item.itemId && (() => {
+                          const selectedItem = getItemOptions(item.itemType).find(i => i.id === item.itemId)
+                          return selectedItem ? (
+                            <div className="flex items-center gap-2 px-2 py-1 bg-blue-50 border border-blue-100 rounded-md">
+                              <span className="text-xs font-mono font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">{selectedItem.sku}</span>
+                              <span className="text-xs text-gray-500">{selectedItem.quantity} {selectedItem.unit} in stock</span>
+                            </div>
+                          ) : null
+                        })()}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Quantity</Label>
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateSOItem(index, "quantity", e.target.value)}
+                          className="h-8 text-xs"
+                          placeholder="0"
+                        />
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={() => removeSOItem(index)}>Remove</Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditSODialogOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Sales Order Dialog */}
       <Dialog open={isCreateSODialogOpen} onOpenChange={setIsCreateSODialogOpen}>
