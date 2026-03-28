@@ -19,7 +19,7 @@ import { RequiredLabel } from "@/components/ui/required-label"
 import { ItemSelector } from "@/components/ui/item-selector"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User, Pencil } from "lucide-react"
+import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User, MoreVertical } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateReceivingReportPDF } from "@/lib/pdf-generator"
 import { add } from "date-fns"
@@ -46,6 +46,7 @@ export default function Inbound() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isEditPODialogOpen, setIsEditPODialogOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [openMenuId, setOpenMenuId] = useState(null)
 
   // Form states
   const [formData, setFormData] = useState({
@@ -638,33 +639,57 @@ export default function Inbound() {
                         {user?.role === "ADMIN" && <TableCell className="text-gray-700">{formatCurrency(order.totalValue)}</TableCell>}
                         <TableCell className="text-gray-700">{order.createdBy?.name}</TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openViewDialog(order)} className="h-8 w-8 p-0">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {order.status === "PENDING" && (
-                              <Button variant="outline" size="sm" onClick={() => openEditDialog(order)} className="h-8 w-8 p-0">
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {canReceive(order) && (
-                              <Button variant="outline" size="sm" onClick={() => openReceiveDialog(order)} className="h-8">
-                                Receive
-                              </Button>
-                            )}
+                          <div className="relative">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => generateReceivingReport(order.id)}
-                              disabled={generatingReport}
                               className="h-8 w-8 p-0"
+                              onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
                             >
-                              {generatingReport ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Download className="h-4 w-4" />
-                              )}
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
+                            {openMenuId === order.id && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                                <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                                  <button
+                                    onClick={() => { openViewDialog(order); setOpenMenuId(null) }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                  >
+                                    <Eye className="h-4 w-4" /> View Details
+                                  </button>
+                                  {order.status === "PENDING" && (
+                                    <button
+                                      onClick={() => { openEditDialog(order); setOpenMenuId(null) }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                      <Eye className="h-4 w-4 opacity-0" />
+                                      <span className="-ml-6 flex items-center gap-2">
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        Edit Order
+                                      </span>
+                                    </button>
+                                  )}
+                                  {canReceive(order) && (
+                                    <button
+                                      onClick={() => { openReceiveDialog(order); setOpenMenuId(null) }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                      <Package className="h-4 w-4" /> Receive Items
+                                    </button>
+                                  )}
+                                  <div className="border-t border-gray-100 my-1" />
+                                  <button
+                                    onClick={() => { generateReceivingReport(order.id); setOpenMenuId(null) }}
+                                    disabled={generatingReport}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                  >
+                                    {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                    Download Report
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

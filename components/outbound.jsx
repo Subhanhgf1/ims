@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2, Pencil } from "lucide-react"
+import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2, MoreVertical } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateShippingReportPDF } from "@/lib/pdf-generator"
 
@@ -48,6 +48,7 @@ export default function Outbound() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [generatingReport, setGeneratingReport] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [openMenuId, setOpenMenuId] = useState(null)
 
 const handleDeleteOrder = async (orderId) => {
   if (!confirm("Are you sure you want to delete this order?")) return
@@ -711,52 +712,63 @@ const generateShippingReport = async (orderId) => {
                       {user.role === "ADMIN" && <TableCell>{formatCurrency(order.totalValue)}</TableCell>}
                   
                       <TableCell>
-  <div className="flex gap-2">
-    <Button variant="outline" size="sm" onClick={() => openViewDialog(order)}>
-      <Eye className="h-4 w-4" />
-    </Button>
-    {(order.status === "PREPARING" || order.status === "READY") && (
-      <Button variant="outline" size="sm" onClick={() => openEditDialog(order)} className="h-8 w-8 p-0">
-        <Pencil className="h-4 w-4" />
-      </Button>
-    )}
-      {/* {order.status === "PREPARING" && (
-                            <Button variant="outline" size="sm" onClick={() => openProcessDialog(order)}>
-                              Process
-                            </Button>
-                          )} */}
-    {(order.status === "PREPARING" || order.status === "READY") && (
-      <Button variant="outline" size="sm" onClick={() => openShipDialog(order)}>
-        Ship
-      </Button>
-    )}
+  <div className="relative">
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
-      onClick={() => generateShippingReport(order.id)}
-      disabled={generatingReport}
       className="h-8 w-8 p-0"
+      onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
     >
-      {generatingReport ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Download className="h-4 w-4" />
-      )}
+      <MoreVertical className="h-4 w-4" />
     </Button>
-      {order.status !== "SHIPPED" && order.status !== "DELIVERED" && (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handleDeleteOrder(order.id)}
-        disabled={deletingId === order.id}
-        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:border-red-300"
-      >
-        {deletingId === order.id ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Trash2 className="h-4 w-4" />
-        )}
-      </Button>
+    {openMenuId === order.id && (
+      <>
+        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+        <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+          <button
+            onClick={() => { openViewDialog(order); setOpenMenuId(null) }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <Eye className="h-4 w-4" /> View Details
+          </button>
+          {(order.status === "PREPARING" || order.status === "READY") && (
+            <button
+              onClick={() => { openEditDialog(order); setOpenMenuId(null) }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              Edit Order
+            </button>
+          )}
+          {(order.status === "PREPARING" || order.status === "READY") && (
+            <button
+              onClick={() => { openShipDialog(order); setOpenMenuId(null) }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Truck className="h-4 w-4" /> Ship Order
+            </button>
+          )}
+          <div className="border-t border-gray-100 my-1" />
+          <button
+            onClick={() => { generateShippingReport(order.id); setOpenMenuId(null) }}
+            disabled={generatingReport}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            Download Report
+          </button>
+          {order.status !== "SHIPPED" && order.status !== "DELIVERED" && (
+            <button
+              onClick={() => { handleDeleteOrder(order.id); setOpenMenuId(null) }}
+              disabled={deletingId === order.id}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deletingId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Delete Order
+            </button>
+          )}
+        </div>
+      </>
     )}
   </div>
 </TableCell>
