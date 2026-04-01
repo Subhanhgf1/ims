@@ -20,11 +20,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
+import { PERMISSIONS } from "@/lib/permissions"
 import { Plus, Play, CheckCircle, Clock, Factory, Loader2 } from "lucide-react"
 import { getStatusColor } from "@/lib/utils"
 
 export default function Production() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { toast } = useToast()
   const [productionOrders, setProductionOrders] = useState([])
   const [finishedGoods, setFinishedGoods] = useState([])
@@ -238,6 +241,7 @@ export default function Production() {
           <h2 className="text-2xl font-bold">Production Management</h2>
           <p className="text-muted-foreground">Convert raw materials into finished goods</p>
         </div>
+        {can(PERMISSIONS.PRODUCTION_CREATE) && (
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -350,6 +354,7 @@ export default function Production() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -454,13 +459,13 @@ export default function Production() {
                   <TableCell>{order.endDate ? new Date(order.endDate).toLocaleDateString() : "-"}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      {order.status === "PENDING" && (
+                      {can(PERMISSIONS.PRODUCTION_CREATE) && order.status === "PENDING" && (
                         <Button variant="outline" size="sm" onClick={() => handleStartProduction(order.id)}>
                           <Play className="h-4 w-4 mr-1" />
                           Start
                         </Button>
                       )}
-                      {order.status === "IN_PROGRESS" && (
+                      {can(PERMISSIONS.PRODUCTION_CREATE) && order.status === "IN_PROGRESS" && (
                         <Button
                           variant="outline"
                           size="sm"

@@ -18,9 +18,10 @@ import {
   Copy, Archive, Loader2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
+import { PERMISSIONS } from "@/lib/permissions"
 import AdvancedInventoryModal from "./advanced-inventory-modal"
 import BulkEditModal from "./bulk-edit-modal"
-import { redirect } from "next/dist/server/api-utils"
 
 const STATUS_OPTIONS = [
   { value: "in-stock", label: "In Stock" },
@@ -154,6 +155,7 @@ function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function Inventory() {
+  const { can } = usePermissions()
   const [rawMaterials, setRawMaterials] = useState([])
   const [finishedGoods, setFinishedGoods] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -475,16 +477,18 @@ const clearAllFilters = () => {
           <BulkActionsDropdown
             count={selectedItems.length}
             onAction={handleBulkAction}
-            disabled={selectedItems.length === 0}
+            disabled={selectedItems.length === 0 || !can(PERMISSIONS.INVENTORY_EDIT)}
             loadingAction={bulkLoadingAction}
           />
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => { resetForm(); setEditingItem(null) }}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Item
-              </Button>
+              {can(PERMISSIONS.INVENTORY_EDIT) && (
+                <Button onClick={() => { resetForm(); setEditingItem(null) }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Item
+                </Button>
+              )}
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
@@ -764,6 +768,7 @@ const clearAllFilters = () => {
                         )}
                       </Button>
                       {/* Edit Button */}
+                      {can(PERMISSIONS.INVENTORY_EDIT) && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -776,7 +781,9 @@ const clearAllFilters = () => {
                           <Edit className="h-4 w-4" />
                         )}
                       </Button>
+                      )}
                       {/* Delete Button */}
+                      {can(PERMISSIONS.INVENTORY_EDIT) && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -789,15 +796,7 @@ const clearAllFilters = () => {
                           <Trash2 className="h-4 w-4" />
                         )}
                       </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Finished Goods */}
+                      )}}
         <TabsContent value="finished-goods">
           {filteredFinishedGoods.length > 0 && (
             <div className="flex items-center gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
@@ -863,6 +862,7 @@ const clearAllFilters = () => {
                         )}
                       </Button>
                       {/* Edit Button */}
+                      {can(PERMISSIONS.INVENTORY_EDIT) && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -875,7 +875,9 @@ const clearAllFilters = () => {
                           <Edit className="h-4 w-4" />
                         )}
                       </Button>
+                      )}
                       {/* Delete Button */}
+                      {can(PERMISSIONS.INVENTORY_EDIT) && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -888,6 +890,7 @@ const clearAllFilters = () => {
                           <Trash2 className="h-4 w-4" />
                         )}
                       </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

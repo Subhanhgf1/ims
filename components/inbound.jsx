@@ -19,14 +19,15 @@ import { RequiredLabel } from "@/components/ui/required-label"
 import { ItemSelector } from "@/components/ui/item-selector"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
+import { PERMISSIONS } from "@/lib/permissions"
 import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User, MoreVertical } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateReceivingReportPDF } from "@/lib/pdf-generator"
-import { add } from "date-fns"
-
 
 export default function Inbound() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("purchase-orders")
   const [purchaseOrders, setPurchaseOrders] = useState([])
@@ -493,10 +494,12 @@ export default function Inbound() {
           <p className="text-gray-500">Manage incoming shipments and direct receipts</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={() => setIsCreatePODialogOpen(true)} className="shadow-sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Inbound Order
-          </Button>
+          {can(PERMISSIONS.INBOUND_CREATE) && (
+            <Button onClick={() => setIsCreatePODialogOpen(true)} className="shadow-sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Inbound Order
+            </Button>
+          )}
           {/* <Button variant="outline" onClick={() => setIsCreateReceiptDialogOpen(true)} className="shadow-sm border-gray-300">
             <Package className="h-4 w-4 mr-2" />
             Direct Receipt
@@ -598,7 +601,7 @@ export default function Inbound() {
                     <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="font-semibold">Items</TableHead>
                     <TableHead className="font-semibold">Progress</TableHead>
-                    {user?.role === "ADMIN" && <TableHead className="font-semibold">Total Value</TableHead>}
+                    {can(PERMISSIONS.REPORTS_FINANCIALS) && <TableHead className="font-semibold">Total Value</TableHead>}
                     <TableHead className="font-semibold">Created By</TableHead>
                     <TableHead className="font-semibold">Actions</TableHead>
                   </TableRow>
@@ -636,7 +639,7 @@ export default function Inbound() {
                             </span>
                           </div>
                         </TableCell>
-                        {user?.role === "ADMIN" && <TableCell className="text-gray-700">{formatCurrency(order.totalValue)}</TableCell>}
+                        {can(PERMISSIONS.REPORTS_FINANCIALS) && <TableCell className="text-gray-700">{formatCurrency(order.totalValue)}</TableCell>}
                         <TableCell className="text-gray-700">{order.createdBy?.name}</TableCell>
                         <TableCell>
                           <div className="relative">
@@ -658,19 +661,16 @@ export default function Inbound() {
                                   >
                                     <Eye className="h-4 w-4" /> View Details
                                   </button>
-                                  {order.status === "PENDING" && (
+                                  {can(PERMISSIONS.INBOUND_EDIT) && order.status === "PENDING" && (
                                     <button
                                       onClick={() => { openEditDialog(order); setOpenMenuId(null) }}
                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                     >
-                                      <Eye className="h-4 w-4 opacity-0" />
-                                      <span className="-ml-6 flex items-center gap-2">
-                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                        Edit Order
-                                      </span>
+                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                      Edit Order
                                     </button>
                                   )}
-                                  {canReceive(order) && (
+                                  {can(PERMISSIONS.INBOUND_RECEIVE) && canReceive(order) && (
                                     <button
                                       onClick={() => { openReceiveDialog(order); setOpenMenuId(null) }}
                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -1298,7 +1298,7 @@ export default function Inbound() {
                   </Badge>
                 </div>
               </div>
-              {user?.role === "ADMIN" && selectedOrder?.totalValue && (
+              {can(PERMISSIONS.REPORTS_FINANCIALS) && selectedOrder?.totalValue && (
                 <div>
                   <RequiredLabel className="text-sm font-semibold text-gray-600">Total Value</RequiredLabel>
                   <p className="text-sm text-gray-900 mt-1">{formatCurrency(selectedOrder.totalValue)}</p>
@@ -1355,7 +1355,7 @@ export default function Inbound() {
                           )}
                         </div>
                       </div>
-                      {user?.role === "ADMIN" && item.totalCost && (
+                      {can(PERMISSIONS.REPORTS_FINANCIALS) && item.totalCost && (
                         <div className="text-right">
                           <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.totalCost)}</p>
                           <p className="text-xs text-gray-500">{formatCurrency(item.unitCost)} each</p>

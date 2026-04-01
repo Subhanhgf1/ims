@@ -24,6 +24,7 @@ export async function POST(request) {
         role: true,
         status: true,
         password: true,
+        permissions: true,
       },
     })
 

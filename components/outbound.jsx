@@ -21,12 +21,15 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { usePermissions } from "@/hooks/use-permissions"
+import { PERMISSIONS } from "@/lib/permissions"
 import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2, MoreVertical } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateShippingReportPDF } from "@/lib/pdf-generator"
 
 export default function Outbound() {
   const { user } = useAuth()
+  const { can } = usePermissions()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("sales-orders")
   const [salesOrders, setSalesOrders] = useState([])
@@ -554,10 +557,12 @@ const generateShippingReport = async (orderId) => {
           <p className="text-muted-foreground">Manage outgoing shipments and sales orders</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setIsCreateSODialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Outbound Order
-          </Button>
+          {can(PERMISSIONS.OUTBOUND_CREATE) && (
+            <Button onClick={() => setIsCreateSODialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Outbound Order
+            </Button>
+          )}
           {/* <Button variant="outline" onClick={() => setIsCreateShipmentDialogOpen(true)}>
             <Send className="h-4 w-4 mr-2" />
             Direct Shipment
@@ -686,7 +691,7 @@ const generateShippingReport = async (orderId) => {
                     <TableHead>Status</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Items</TableHead>
-                    {user.role === "ADMIN" && <TableHead>Total Value</TableHead>}
+                    {can(PERMISSIONS.REPORTS_FINANCIALS) && <TableHead>Total Value</TableHead>}
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -709,7 +714,7 @@ const generateShippingReport = async (orderId) => {
                         <Badge className={getPriorityColor(order.priority)}>{order.priority}</Badge>
                       </TableCell>
                       <TableCell>{order.items?.length || 0}</TableCell>
-                      {user.role === "ADMIN" && <TableCell>{formatCurrency(order.totalValue)}</TableCell>}
+                      {can(PERMISSIONS.REPORTS_FINANCIALS) && <TableCell>{formatCurrency(order.totalValue)}</TableCell>}
                   
                       <TableCell>
   <div className="relative">
@@ -731,7 +736,7 @@ const generateShippingReport = async (orderId) => {
           >
             <Eye className="h-4 w-4" /> View Details
           </button>
-          {(order.status === "PREPARING" || order.status === "READY") && (
+          {can(PERMISSIONS.OUTBOUND_EDIT) && (order.status === "PREPARING" || order.status === "READY") && (
             <button
               onClick={() => { openEditDialog(order); setOpenMenuId(null) }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -740,7 +745,7 @@ const generateShippingReport = async (orderId) => {
               Edit Order
             </button>
           )}
-          {(order.status === "PREPARING" || order.status === "READY") && (
+          {can(PERMISSIONS.OUTBOUND_SHIP) && (order.status === "PREPARING" || order.status === "READY") && (
             <button
               onClick={() => { openShipDialog(order); setOpenMenuId(null) }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -757,7 +762,7 @@ const generateShippingReport = async (orderId) => {
             {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             Download Report
           </button>
-          {order.status !== "SHIPPED" && order.status !== "DELIVERED" && (
+          {can(PERMISSIONS.OUTBOUND_DELETE) && order.status !== "SHIPPED" && order.status !== "DELIVERED" && (
             <button
               onClick={() => { handleDeleteOrder(order.id); setOpenMenuId(null) }}
               disabled={deletingId === order.id}
@@ -1436,7 +1441,7 @@ const generateShippingReport = async (orderId) => {
                 </div>
               )}
             </div>
-            {user.role === "ADMIN" && selectedOrder?.totalValue && (
+            {can(PERMISSIONS.REPORTS_FINANCIALS) && selectedOrder?.totalValue && (
               <div>
                 <Label className="text-sm font-medium">Total Value</Label>
                 <p className="text-sm">{formatCurrency(selectedOrder.totalValue)}</p>
@@ -1471,7 +1476,7 @@ const generateShippingReport = async (orderId) => {
                         )}
                       </p>
                     </div>
-                    {user.role === "ADMIN" && item.totalPrice && (
+                    {can(PERMISSIONS.REPORTS_FINANCIALS) && item.totalPrice && (
                       <div className="text-right">
                         <p className="text-sm">{formatCurrency(item.totalPrice)}</p>
                         <p className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)} each</p>
