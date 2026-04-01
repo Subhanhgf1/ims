@@ -753,50 +753,28 @@ const clearAllFilters = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {/* Advanced Settings Button */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={loadingAdvancedId === item.id || deletingItemId === item.id}
-                        onClick={() => openAdvancedModal(item)}
-                        title="Advanced Management"
-                      >
-                        {loadingAdvancedId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Settings className="h-4 w-4" />
-                        )}
+                      <Button size="sm" variant="outline" disabled={loadingAdvancedId === item.id || deletingItemId === item.id} onClick={() => openAdvancedModal(item)} title="Advanced Management">
+                        {loadingAdvancedId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
                       </Button>
-                      {/* Edit Button */}
                       {can(PERMISSIONS.INVENTORY_EDIT) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={loadingEditId === item.id || deletingItemId === item.id}
-                        onClick={() => openEditDialog(item)}
-                      >
-                        {loadingEditId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Edit className="h-4 w-4" />
-                        )}
-                      </Button>
+                        <Button size="sm" variant="outline" disabled={loadingEditId === item.id || deletingItemId === item.id} onClick={() => openEditDialog(item)}>
+                          {loadingEditId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
+                        </Button>
                       )}
-                      {/* Delete Button */}
                       {can(PERMISSIONS.INVENTORY_EDIT) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={deletingItemId === item.id}
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        {deletingItemId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                      )}}
+                        <Button size="sm" variant="outline" disabled={deletingItemId === item.id} onClick={() => handleDelete(item.id)}>
+                          {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Finished Goods */}
         <TabsContent value="finished-goods">
           {filteredFinishedGoods.length > 0 && (
             <div className="flex items-center gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
@@ -818,12 +796,7 @@ const clearAllFilters = () => {
                       <Checkbox checked={selectedItems.includes(item.id)} onCheckedChange={() => handleItemSelect(item.id)} className="mt-1" />
                       <div className="flex-shrink-0">
                         {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl || "/placeholder.svg"}
-                            alt={item.name}
-                            className="w-16 h-16 object-cover rounded-md"
-                            onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex" }}
-                          />
+                          <img src={item.imageUrl || "/placeholder.svg"} alt={item.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex" }} />
                         ) : null}
                         <div className={`w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center ${item.imageUrl ? "hidden" : "flex"}`}>
                           <ImageIcon className="h-6 w-6 text-gray-400" />
@@ -831,14 +804,12 @@ const clearAllFilters = () => {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-  <Package className="h-4 w-4" />
-  <h3 className="font-semibold">{item.name}</h3>
-  <Badge variant="outline">{item.sku}</Badge>
-  {item.category && (
-    <Badge variant="secondary" className="text-xs">{item.category.name}</Badge>
-  )}
-  {getStatusBadge(item)}
-</div>
+                          <Package className="h-4 w-4" />
+                          <h3 className="font-semibold">{item.name}</h3>
+                          <Badge variant="outline">{item.sku}</Badge>
+                          {item.category && <Badge variant="secondary" className="text-xs">{item.category.name}</Badge>}
+                          {getStatusBadge(item)}
+                        </div>
                         <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                           <div><span className="font-medium">Quantity:</span> {item.quantity} {item.unit}</div>
@@ -847,49 +818,18 @@ const clearAllFilters = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {/* Advanced Settings Button */}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={loadingAdvancedId === item.id || deletingItemId === item.id}
-                        onClick={() => openAdvancedModal(item)}
-                        title="Advanced Management"
-                      >
-                        {loadingAdvancedId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Settings className="h-4 w-4" />
-                        )}
+                      <Button size="sm" variant="outline" disabled={loadingAdvancedId === item.id || deletingItemId === item.id} onClick={() => openAdvancedModal(item)} title="Advanced Management">
+                        {loadingAdvancedId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
                       </Button>
-                      {/* Edit Button */}
                       {can(PERMISSIONS.INVENTORY_EDIT) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={loadingEditId === item.id || deletingItemId === item.id}
-                        onClick={() => openEditDialog(item)}
-                      >
-                        {loadingEditId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Edit className="h-4 w-4" />
-                        )}
-                      </Button>
+                        <Button size="sm" variant="outline" disabled={loadingEditId === item.id || deletingItemId === item.id} onClick={() => openEditDialog(item)}>
+                          {loadingEditId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
+                        </Button>
                       )}
-                      {/* Delete Button */}
                       {can(PERMISSIONS.INVENTORY_EDIT) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={deletingItemId === item.id}
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        {deletingItemId === item.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
+                        <Button size="sm" variant="outline" disabled={deletingItemId === item.id} onClick={() => handleDelete(item.id)}>
+                          {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </Button>
                       )}
                     </div>
                   </div>
