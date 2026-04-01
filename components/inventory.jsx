@@ -753,9 +753,11 @@ const clearAllFilters = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      {can(PERMISSIONS.INVENTORY_EDIT) && (
                       <Button size="sm" variant="outline" disabled={loadingAdvancedId === item.id || deletingItemId === item.id} onClick={() => openAdvancedModal(item)} title="Advanced Management">
                         {loadingAdvancedId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
                       </Button>
+                      )}
                       {can(PERMISSIONS.INVENTORY_EDIT) && (
                         <Button size="sm" variant="outline" disabled={loadingEditId === item.id || deletingItemId === item.id} onClick={() => openEditDialog(item)}>
                           {loadingEditId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
