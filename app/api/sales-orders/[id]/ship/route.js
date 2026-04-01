@@ -169,7 +169,7 @@ export async function POST(request, { params }) {
         `*SO:* #${result.soNumber}\n` +
         `*Customer:* ${result.customer?.name ?? "Unknown"}\n` +
         `*Processed by:* ${result.createdBy?.name ?? "Unknown"}\n` +
-        `*Time:* ${new Date().toLocaleString()}\n` +
+        `*Time:* ${new Date().toLocaleString("en-PK", { timeZone: "Asia/Karachi", dateStyle: "medium", timeStyle: "short" })}\n` +
         `${divider}\n\n` +
         `*Items*\n\n` +
         `${itemLines}\n\n` +

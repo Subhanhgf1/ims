@@ -201,7 +201,7 @@ export async function POST(request, { params }) {
         `*PO:* #${purchaseOrder.poNumber}\n` +
         `*Supplier:* ${purchaseOrder.supplier.name}\n` +
         `*Received by:* ${user?.name ?? "Unknown"}\n` +
-        `*Time:* ${new Date().toLocaleString()}\n` +
+        `*Time:* ${new Date().toLocaleString("en-PK", { timeZone: "Asia/Karachi", dateStyle: "medium", timeStyle: "short" })}\n` +
         `${divider}\n\n` +
         `*Items*\n\n` +
         `${itemLines}\n\n` +
