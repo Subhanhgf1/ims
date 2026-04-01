@@ -33,17 +33,24 @@ async function main() {
   console.log(`Found ${users.length} users`)
 
   for (const user of users) {
-    // Store empty object — role defaults are computed at runtime in resolvePermissions
-    // Only actual overrides (deviations from role) should be stored
-    if (user.permissions === null) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { permissions: {} },
-      })
-      console.log(`✅ Initialized permissions for ${user.name} (${user.role})`)
-    } else {
-      console.log(`⏭️  Skipped ${user.name} — already has permissions`)
+    const roleDefaults = ROLE_DEFAULTS[user.role] ?? ROLE_DEFAULTS.OPERATOR
+    const stored = user.permissions ?? {}
+
+    // Keep only keys that genuinely differ from the role default
+    const trueOverrides = {}
+    for (const [key, value] of Object.entries(stored)) {
+      if (typeof value === "boolean" && value !== roleDefaults[key]) {
+        trueOverrides[key] = value
+      }
     }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { permissions: trueOverrides },
+    })
+
+    const overrideCount = Object.keys(trueOverrides).length
+    console.log(`✅ ${user.name} (${user.role}) — kept ${overrideCount} override(s): ${JSON.stringify(trueOverrides)}`)
   }
 
   console.log("Done.")

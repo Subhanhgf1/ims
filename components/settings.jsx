@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Plus, Edit, Trash2, Loader2, ShieldCheck } from "lucide-react"
 import { getStatusColor, formatDate } from "@/lib/utils"
 import { PERMISSIONS, resolvePermissions } from "@/lib/permissions"
+import { usePermissions } from "@/hooks/use-permissions"
 
 // Permission keys grouped by module for the editor UI
 const PERMISSION_GROUPS = [
@@ -75,6 +76,7 @@ const PERMISSION_GROUPS = [
 
 export default function Settings() {
   const { user, refreshUser } = useAuth()
+  const { can } = usePermissions()
   const { toast } = useToast()
   const [activeSection, setActiveSection] = useState("users")
   const [loading, setLoading] = useState(true)
@@ -455,7 +457,16 @@ export default function Settings() {
 
   const openPermissionsDialog = (userItem) => {
     setPermissionsTarget(userItem)
-    setPermissionOverrides(userItem.permissions ?? {})
+    // Only keep keys that differ from the role default — these are the true overrides
+    const roleDefaults = resolvePermissions({ role: userItem.role, permissions: {} })
+    const stored = userItem.permissions ?? {}
+    const trueOverrides = {}
+    for (const [key, value] of Object.entries(stored)) {
+      if (typeof value === "boolean" && value !== roleDefaults[key]) {
+        trueOverrides[key] = value
+      }
+    }
+    setPermissionOverrides(trueOverrides)
     setIsPermissionsDialogOpen(true)
   }
 
@@ -664,7 +675,7 @@ export default function Settings() {
             <CardTitle>User Management</CardTitle>
             <CardDescription>Manage user accounts and permissions</CardDescription>
           </div>
-          {user.role === "ADMIN" && (
+          {can(PERMISSIONS.USERS_MANAGE) && (
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add User
@@ -681,7 +692,7 @@ export default function Settings() {
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last Login</TableHead>
-              {user.role === "ADMIN" && <TableHead>Actions</TableHead>}
+              {can(PERMISSIONS.USERS_MANAGE) && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -696,7 +707,7 @@ export default function Settings() {
                   <Badge className={getStatusColor(userItem.status)}>{userItem.status}</Badge>
                 </TableCell>
                 <TableCell>{userItem.lastLogin ? formatDate(userItem.lastLogin) : "Never"}</TableCell>
-                {user.role === "ADMIN" && (
+                {can(PERMISSIONS.USERS_MANAGE) && (
                   <TableCell>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openPermissionsDialog(userItem)} title="Edit Permissions">
