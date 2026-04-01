@@ -74,7 +74,7 @@ const PERMISSION_GROUPS = [
 ]
 
 export default function Settings() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const { toast } = useToast()
   const [activeSection, setActiveSection] = useState("users")
   const [loading, setLoading] = useState(true)
@@ -491,6 +491,10 @@ export default function Settings() {
       if (response.ok) {
         toast({ title: "Success", description: `Permissions updated for ${permissionsTarget.name}` })
         setIsPermissionsDialogOpen(false)
+        // If the target is the currently logged-in user, refresh their session immediately
+        if (permissionsTarget.id === user.id) {
+          await refreshUser()
+        }
         fetchData()
       } else {
         const error = await response.json()
