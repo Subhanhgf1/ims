@@ -1065,6 +1065,81 @@ export default function Settings() {
     </Card>
   )
 
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" })
+  const [changingPassword, setChangingPassword] = useState(false)
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({ title: "Error", description: "New passwords do not match", variant: "destructive" })
+      return
+    }
+    try {
+      setChangingPassword(true)
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, oldPassword: passwordForm.oldPassword, newPassword: passwordForm.newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast({ title: "Success", description: "Password changed successfully" })
+      setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+
+  const renderPasswordSettings = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Change Password</CardTitle>
+        <CardDescription>Update your account password</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
+          <div className="space-y-2">
+            <Label htmlFor="oldPassword">Current Password</Label>
+            <Input
+              id="oldPassword"
+              type="password"
+              value={passwordForm.oldPassword}
+              onChange={(e) => setPasswordForm((p) => ({ ...p, oldPassword: e.target.value }))}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">New Password</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
+              required
+              minLength={6}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+              required
+              minLength={6}
+            />
+          </div>
+          <Button type="submit" disabled={changingPassword}>
+            {changingPassword ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Changing...</> : "Change Password"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -1085,6 +1160,8 @@ export default function Settings() {
         return renderSuppliersSettings()
       case "customers":
         return renderCustomersSettings()
+      case "password":
+        return renderPasswordSettings()
       case "notifications":
         return renderNotificationsSettings()
       default:
@@ -1355,6 +1432,7 @@ export default function Settings() {
     { id: "locations", label: "Locations" },
     { id: "suppliers", label: "Suppliers" },
     { id: "customers", label: "Customers" },
+    { id: "password", label: "Change Password" },
     // { id: "notifications", label: "Notifications" },
   ]
 
