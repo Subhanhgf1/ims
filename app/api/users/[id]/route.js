@@ -4,6 +4,24 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = params
+    const { permissions } = await request.json()
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { permissions },
+      select: { id: true, name: true, permissions: true },
+    })
+
+    return NextResponse.json(user)
+  } catch (error) {
+    console.error("Error updating user permissions:", error)
+    return NextResponse.json({ error: "Failed to update permissions" }, { status: 500 })
+  }
+}
+
 export async function PUT(request, { params }) {
   try {
     const { id } = params

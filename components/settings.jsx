@@ -18,8 +18,60 @@ import {
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { Plus, Edit, Trash2, Loader2, ShieldCheck } from "lucide-react"
 import { getStatusColor, formatDate } from "@/lib/utils"
+import { PERMISSIONS, resolvePermissions } from "@/lib/permissions"
+
+// Permission keys grouped by module for the editor UI
+const PERMISSION_GROUPS = [
+  {
+    label: "Inbound",
+    keys: [
+      { key: PERMISSIONS.INBOUND_VIEW,    label: "View" },
+      { key: PERMISSIONS.INBOUND_CREATE,  label: "Create" },
+      { key: PERMISSIONS.INBOUND_EDIT,    label: "Edit" },
+      { key: PERMISSIONS.INBOUND_RECEIVE, label: "Receive Items" },
+    ],
+  },
+  {
+    label: "Outbound",
+    keys: [
+      { key: PERMISSIONS.OUTBOUND_VIEW,   label: "View" },
+      { key: PERMISSIONS.OUTBOUND_CREATE, label: "Create" },
+      { key: PERMISSIONS.OUTBOUND_EDIT,   label: "Edit" },
+      { key: PERMISSIONS.OUTBOUND_SHIP,   label: "Ship" },
+      { key: PERMISSIONS.OUTBOUND_DELETE, label: "Delete" },
+    ],
+  },
+  {
+    label: "Inventory",
+    keys: [
+      { key: PERMISSIONS.INVENTORY_VIEW, label: "View" },
+      { key: PERMISSIONS.INVENTORY_EDIT, label: "Edit / Add / Delete" },
+    ],
+  },
+  {
+    label: "Production",
+    keys: [
+      { key: PERMISSIONS.PRODUCTION_VIEW,   label: "View" },
+      { key: PERMISSIONS.PRODUCTION_CREATE, label: "Create / Start / Complete" },
+    ],
+  },
+  {
+    label: "Reports",
+    keys: [
+      { key: PERMISSIONS.REPORTS_VIEW,       label: "View Reports" },
+      { key: PERMISSIONS.REPORTS_FINANCIALS, label: "View Financials" },
+    ],
+  },
+  {
+    label: "System",
+    keys: [
+      { key: PERMISSIONS.SETTINGS_VIEW, label: "Access Settings" },
+      { key: PERMISSIONS.USERS_MANAGE,  label: "Manage Users" },
+    ],
+  },
+]
 
 export default function Settings() {
   const { user } = useAuth()
@@ -41,6 +93,10 @@ export default function Settings() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false)
+  const [permissionsTarget, setPermissionsTarget] = useState(null)   // user being edited
+  const [permissionOverrides, setPermissionOverrides] = useState({}) // local edits
+  const [savingPermissions, setSavingPermissions] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
 
   // Form states
@@ -397,6 +453,56 @@ export default function Settings() {
     setSelectedItem(null)
   }
 
+  const openPermissionsDialog = (userItem) => {
+    setPermissionsTarget(userItem)
+    setPermissionOverrides(userItem.permissions ?? {})
+    setIsPermissionsDialogOpen(true)
+  }
+
+  // For a given key, derive the current 3-state value:
+  // "allow" | "deny" | "default"
+  const getOverrideState = (key) => {
+    if (key in permissionOverrides) {
+      return permissionOverrides[key] === true ? "allow" : "deny"
+    }
+    return "default"
+  }
+
+  const setOverrideState = (key, state) => {
+    setPermissionOverrides((prev) => {
+      const next = { ...prev }
+      if (state === "default") {
+        delete next[key]
+      } else {
+        next[key] = state === "allow"
+      }
+      return next
+    })
+  }
+
+  const handleSavePermissions = async () => {
+    try {
+      setSavingPermissions(true)
+      const response = await fetch(`/api/users/${permissionsTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissions: permissionOverrides }),
+      })
+      if (response.ok) {
+        toast({ title: "Success", description: `Permissions updated for ${permissionsTarget.name}` })
+        setIsPermissionsDialogOpen(false)
+        fetchData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setSavingPermissions(false)
+    }
+  }
+
   const getRoleColor = (role) => {
     switch (role) {
       case "ADMIN":
@@ -589,6 +695,9 @@ export default function Settings() {
                 {user.role === "ADMIN" && (
                   <TableCell>
                     <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openPermissionsDialog(userItem)} title="Edit Permissions">
+                        <ShieldCheck className="h-4 w-4" />
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => openEditDialog(userItem)}>
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -1310,6 +1419,73 @@ export default function Settings() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      <Dialog open={isPermissionsDialogOpen} onOpenChange={(open) => { if (!open) setIsPermissionsDialogOpen(false) }}>
+        <DialogContent className="sm:max-w-[580px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" />
+              Permissions — {permissionsTarget?.name}
+            </DialogTitle>
+            <DialogDescription>
+              <span className="inline-flex items-center gap-1">
+                Role: <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getRoleColor(permissionsTarget?.role)}`}>{permissionsTarget?.role}</span>
+              </span>
+              {" "}· Override individual permissions below. "Default" follows the role.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto space-y-5 py-2 pr-1">
+            {PERMISSION_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{group.label}</p>
+                <div className="space-y-2">
+                  {group.keys.map(({ key, label }) => {
+                    const state = getOverrideState(key)
+                    // what the role default actually is
+                    const roleDefault = resolvePermissions({ role: permissionsTarget?.role, permissions: {} })[key]
+                    return (
+                      <div key={key} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-gray-50 border border-gray-100">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{label}</p>
+                          <p className="text-xs text-gray-400">Role default: {roleDefault ? "✅ Allow" : "❌ Deny"}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          {["allow", "default", "deny"].map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => setOverrideState(key, s)}
+                              className={`px-2.5 py-1 rounded text-xs font-medium border transition-all ${
+                                state === s
+                                  ? s === "allow"
+                                    ? "bg-green-600 text-white border-green-600"
+                                    : s === "deny"
+                                    ? "bg-red-600 text-white border-red-600"
+                                    : "bg-gray-700 text-white border-gray-700"
+                                  : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                              }`}
+                            >
+                              {s === "allow" ? "Allow" : s === "deny" ? "Deny" : "Default"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsPermissionsDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSavePermissions} disabled={savingPermissions}>
+              {savingPermissions ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : "Save Permissions"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

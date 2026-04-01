@@ -15,6 +15,7 @@ export async function GET() {
         status: true,
         lastLogin: true,
         createdAt: true,
+        permissions: true,
       },
       orderBy: { name: "asc" },
     })
