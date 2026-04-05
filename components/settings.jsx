@@ -87,6 +87,7 @@ export default function Settings() {
   const [locations, setLocations] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [customers, setCustomers] = useState([])
+  const [categories, setCategories] = useState([])
   const [inventorySettings, setInventorySettings] = useState({})
   const [systemPreferences, setSystemPreferences] = useState({})
   const [notificationSettings, setNotificationSettings] = useState({})
@@ -128,6 +129,9 @@ export default function Settings() {
           break
         case "customers":
           await fetchCustomers()
+          break
+        case "categories":
+          await fetchCategories()
           break
         case "notifications":
           await fetchNotificationSettings()
@@ -173,6 +177,14 @@ export default function Settings() {
     if (response.ok) {
       const data = await response.json()
       setCustomers(data)
+    }
+  }
+
+  const fetchCategories = async () => {
+    const response = await fetch("/api/categories")
+    if (response.ok) {
+      const data = await response.json()
+      setCategories(data.data || [])
     }
   }
 
@@ -1065,6 +1077,123 @@ export default function Settings() {
     </Card>
   )
 
+  const [categoryName, setCategoryName] = useState("")
+  const [editingCategory, setEditingCategory] = useState(null)
+  const [savingCategory, setSavingCategory] = useState(false)
+  const [deletingCategoryId, setDeletingCategoryId] = useState(null)
+
+  const handleSaveCategory = async (e) => {
+    e.preventDefault()
+    if (!categoryName.trim()) return
+    setSavingCategory(true)
+    try {
+      const url = editingCategory ? `/api/categories/${editingCategory.id}` : "/api/categories"
+      const method = editingCategory ? "PATCH" : "POST"
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: categoryName.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast({ title: "Success", description: editingCategory ? "Category updated" : "Category added" })
+      setCategoryName("")
+      setEditingCategory(null)
+      fetchCategories()
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setSavingCategory(false)
+    }
+  }
+
+  const handleDeleteCategory = async (id) => {
+    if (!confirm("Delete this category?")) return
+    setDeletingCategoryId(id)
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast({ title: "Success", description: "Category deleted" })
+      fetchCategories()
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setDeletingCategoryId(null)
+    }
+  }
+
+  const renderCategoriesSettings = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{editingCategory ? "Edit Category" : "Add Category"}</CardTitle>
+          <CardDescription>{editingCategory ? `Editing: ${editingCategory.name}` : "Add a new product category"}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSaveCategory} className="flex gap-3 max-w-sm">
+            <Input
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              placeholder="Category name"
+              required
+            />
+            <Button type="submit" disabled={savingCategory}>
+              {savingCategory ? <Loader2 className="h-4 w-4 animate-spin" /> : editingCategory ? "Save" : "Add"}
+            </Button>
+            {editingCategory && (
+              <Button type="button" variant="outline" onClick={() => { setEditingCategory(null); setCategoryName("") }}>Cancel</Button>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Categories</CardTitle>
+          <CardDescription>Manage product categories used in inventory</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Products</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories.length === 0 && (
+                <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-6">No categories yet</TableCell></TableRow>
+              )}
+              {categories.map((cat) => (
+                <TableRow key={cat.id}>
+                  <TableCell className="font-medium">{cat.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{cat._count?.finishedGoods ?? 0} product(s)</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => { setEditingCategory(cat); setCategoryName(cat.name) }}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={deletingCategoryId === cat.id}
+                        onClick={() => handleDeleteCategory(cat.id)}
+                      >
+                        {deletingCategoryId === cat.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
   const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" })
   const [changingPassword, setChangingPassword] = useState(false)
 
@@ -1160,6 +1289,8 @@ export default function Settings() {
         return renderSuppliersSettings()
       case "customers":
         return renderCustomersSettings()
+      case "categories":
+        return renderCategoriesSettings()
       case "password":
         return renderPasswordSettings()
       case "notifications":
@@ -1432,6 +1563,7 @@ export default function Settings() {
     { id: "locations", label: "Locations" },
     { id: "suppliers", label: "Suppliers" },
     { id: "customers", label: "Customers" },
+    { id: "categories", label: "Categories" },
     { id: "password", label: "Change Password" },
     // { id: "notifications", label: "Notifications" },
   ]
