@@ -77,6 +77,7 @@ model Location {
   inboundReceiptItems   InboundReceiptItem[]
   outboundShipmentItems OutboundShipmentItem[]
   rawMaterials          RawMaterial[]
+  productBundles        ProductBundle[]
 
   @@map("locations")
 }
@@ -148,6 +149,7 @@ model FinishedGood {
   inventorySettings       InventoryReorderSettings?
   inventoryOrders         InventoryOrder[]         @relation("InventoryOrders")
   returnItems             ReturnItem[]             @relation("ReturnItemFinishedGood")
+  bundleItems             ProductBundleItem[]      @relation("BundleItemToFinishedGood")
 
   @@map("finished_goods")
 }
@@ -477,6 +479,40 @@ model ScannedParcel {
   user           User     @relation("ScannedBy", fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("scanned_parcels")
+}
+
+model ProductBundle {
+  id              String               @id @default(cuid())
+  name            String
+  sku             String               @unique
+  description     String?
+  unit            String               @default("pcs")
+  price           Float                @default(0)
+  cost            Float                @default(0)
+  minimumStock    Int                  @default(0)
+  status          InventoryStatus      @default(IN_STOCK)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  
+  locationId      String?
+  location        Location?            @relation(fields: [locationId], references: [id])
+  
+  items           ProductBundleItem[]
+  
+  @@map("product_bundles")
+}
+
+model ProductBundleItem {
+  id              String        @id @default(cuid())
+  bundleId        String
+  finishedGoodId  String
+  quantity        Int           @default(1)
+  
+  bundle          ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  finishedGood    FinishedGood  @relation("BundleItemToFinishedGood", fields: [finishedGoodId], references: [id])
+
+  @@unique([bundleId, finishedGoodId])
+  @@map("product_bundle_items")
 }
 
 enum Role {

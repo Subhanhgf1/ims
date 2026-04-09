@@ -158,22 +158,27 @@ export default function Returns() {
         search: debouncedSearch,
         sortBy: sortConfig.key,
         sortOrder: sortConfig.order,
-      })
+      }).toString()
 
-      const [fgRes, rmRes, returnsRes] = await Promise.all([
-        fetch("/api/inventory/finished-goods"),
+      const [returnsRes, rawMaterialsRes, finishedGoodsRes, bundlesRes] = await Promise.all([
+        fetch(`/api/returns?${queryParams}`),
         fetch("/api/inventory/raw-materials"),
-        fetch(`/api/returns?${queryParams.toString()}`),
+        fetch("/api/inventory/finished-goods"),
+        fetch("/api/inventory/bundles"),
       ])
 
       const combined = []
-      if (fgRes.ok) {
-        const data = await fgRes.json()
-        combined.push(...data.map((i) => ({ ...i, _type: "finished_good" })))
+      if (finishedGoodsRes.ok) {
+        const data = await finishedGoodsRes.json()
+        combined.push(...data.map((i) => ({ ...i, imsType: "finished_good" })))
       }
-      if (rmRes.ok) {
-        const data = await rmRes.json()
-        combined.push(...data.map((i) => ({ ...i, _type: "raw_material" })))
+      if (rawMaterialsRes.ok) {
+        const data = await rawMaterialsRes.json()
+        combined.push(...data.map((i) => ({ ...i, imsType: "raw_material" })))
+      }
+      if (bundlesRes.ok) {
+        const data = await bundlesRes.json()
+        combined.push(...data.map((i) => ({ ...i, imsType: "bundle" })))
       }
       setImsItems(combined)
 
@@ -331,22 +336,49 @@ export default function Returns() {
   const openProcessDialog = (entry) => {
     setProcessingEntry(entry)
 
-    const order = entry.orderData
-    const mappings = (order.order_items || []).map((item) => {
+    const order = entry.orderData || { order_items: [] }
+    const mappings = []
+
+    order.order_items.forEach((item) => {
       const matched = autoMatchSku(item.sku)
-      return {
-        orderItemId: item.id,
-        orderItemName: item.name,
-        orderItemSku: item.sku,
-        orderItemQty: item.quantity,
-        imageUrl: item.image_url,
-        imsItemId: matched?.id || "",
-        imsItemName: matched?.name || "",
-        quantity: item.quantity,
-        reason: RETURN_REASONS[0],
-        condition: "GOOD",
-        notes: "",
-        autoMatched: !!matched,
+      
+      // If auto-matched item is a bundle, explode it into components
+      if (matched?.imsType === "bundle" && matched.items?.length > 0) {
+        matched.items.forEach((bundleItem) => {
+          const component = bundleItem.finishedGood
+          const totalQty = item.quantity * bundleItem.quantity
+          
+          mappings.push({
+            orderItemId: item.id,
+            orderItemName: `${item.name} > ${component.name}`,
+            orderItemSku: component.sku,
+            orderItemQty: totalQty,
+            imageUrl: item.image_url,
+            imsItemId: component.id,
+            imsItemName: component.name,
+            quantity: totalQty,
+            reason: RETURN_REASONS[0],
+            condition: "GOOD",
+            notes: `BOM: ${bundleItem.quantity}x per bundle`,
+            autoMatched: true,
+            isBundleComponent: true
+          })
+        })
+      } else {
+        mappings.push({
+          orderItemId: item.id,
+          orderItemName: item.name,
+          orderItemSku: item.sku,
+          orderItemQty: item.quantity,
+          imageUrl: item.image_url,
+          imsItemId: matched?.id || "",
+          imsItemName: matched?.name || "",
+          quantity: item.quantity,
+          reason: RETURN_REASONS[0],
+          condition: "GOOD",
+          notes: "",
+          autoMatched: !!matched,
+        })
       }
     })
 

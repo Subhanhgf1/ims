@@ -30,7 +30,11 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params
     const data = await request.json()
-    const { name, sku, description, unit, cost, price, minimumStock, locationId, imageUrl, categoryId } = data
+    const { 
+      name, sku, description, unit, cost, price, 
+      minimumStock, locationId, imageUrl, categoryId,
+      isBundle, components 
+    } = data
 
     const finishedGood = await prisma.finishedGood.update({
       where: { id },

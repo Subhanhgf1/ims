@@ -13,7 +13,9 @@ export async function GET() {
         category: {
           select: { name: true },
         },
-        
+        category: {
+          select: { name: true },
+        }
       },
       orderBy: { name: "asc" },
     })
@@ -28,7 +30,11 @@ export async function GET() {
 export async function POST(request) {
   try {
     const data = await request.json()
-    const { name, sku, description, unit, cost, price, minimumStock, locationId, imageUrl } = data
+    const { 
+      name, sku, description, unit, cost, price, 
+      minimumStock, locationId, imageUrl, 
+      isBundle, components // components: [{id, quantity}]
+    } = data
 
     if (!name || !sku || !unit || cost === undefined || price === undefined || !locationId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -49,7 +55,7 @@ export async function POST(request) {
       include: {
         location: {
           select: { code: true, zone: true },
-        },
+        }
       },
     })
 

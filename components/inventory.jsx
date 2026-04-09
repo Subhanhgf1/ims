@@ -11,11 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 import {
   Plus, Package, Search, Edit, Trash2, ImageIcon, Settings,
   Filter, X, ChevronDown, PencilLine, Tags, MapPin,
   Truck, AlertTriangle, CheckCircle2, XCircle, Download,
-  Copy, Archive, Loader2,
+  Copy, Archive, Loader2, Link as LinkIcon, Layers
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/use-permissions"
@@ -180,6 +181,8 @@ export default function Inventory() {
   const [loadingAdvancedId, setLoadingAdvancedId] = useState(null) // id of item opening advanced modal
   const [loadingEditId, setLoadingEditId] = useState(null)     // id of item opening edit dialog
   const [bulkLoadingAction, setBulkLoadingAction] = useState(null) // bulk action in progress
+  const [compResults, setCompResults] = useState([]) // BOM item search results
+  const [productBundles, setProductBundles] = useState([]) // New independent bundles state
 
   const { toast } = useToast()
 
@@ -197,8 +200,9 @@ export default function Inventory() {
   }, [lowStockQuery, outStockQuery])
 
   const [formData, setFormData] = useState({
-    name: "", sku: "", description: "", unit: "", cost: "", price: "",
-    minimumStock: "", supplierId: "", locationId: "", imageUrl: "", catergoryId: ""
+    name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
+    minimumStock: "0", supplierId: "", locationId: "", imageUrl: "", categoryId: "",
+    components: [] // [{finishedGoodId, quantity}]
   })
 
   const [categories, setCategories] = useState([])
@@ -207,7 +211,11 @@ const [categoryFilter, setCategoryFilter] = useState("all")
   useEffect(() => { fetchData() }, [])
 
   useEffect(() => {
-    const currentItems = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
+    const currentItems = 
+      activeTab === "raw-materials" ? filteredRawMaterials : 
+      activeTab === "bundles" ? filteredBundles : 
+      filteredFinishedGoods
+
     if (selectAll && currentItems.length > 0) {
       setSelectedItems(currentItems.map((item) => item.id))
     } else if (!selectAll) {
@@ -216,28 +224,30 @@ const [categoryFilter, setCategoryFilter] = useState("all")
   }, [selectAll, activeTab])
 
   const fetchData = async () => {
-  try {
-    const [rawMaterialsRes, finishedGoodsRes, suppliersRes, locationsRes, categoriesRes] = await Promise.all([
-      fetch("/api/inventory/raw-materials"),
-      fetch("/api/inventory/finished-goods"),
-      fetch("/api/suppliers"),
-      fetch("/api/locations"),
-      fetch("/api/categories"),
-    ])
-    const [rawMaterialsData, finishedGoodsData, suppliersData, locationsData, categoriesData] = await Promise.all([
-      rawMaterialsRes.json(), finishedGoodsRes.json(), suppliersRes.json(), locationsRes.json(), categoriesRes.json(),
-    ])
-    setRawMaterials(rawMaterialsData)
-    setFinishedGoods(finishedGoodsData)
-    setSuppliers(suppliersData)
-    setLocations(locationsData)
-    setCategories(categoriesData.data || [])
-  } catch (error) {
-    toast({ title: "Error", description: "Failed to fetch inventory data", variant: "destructive" })
-  } finally {
-    setLoading(false)
+    try {
+      const [rawMaterialsRes, finishedGoodsRes, suppliersRes, locationsRes, categoriesRes, bundlesRes] = await Promise.all([
+        fetch("/api/inventory/raw-materials"),
+        fetch("/api/inventory/finished-goods"),
+        fetch("/api/suppliers"),
+        fetch("/api/locations"),
+        fetch("/api/categories"),
+        fetch("/api/inventory/bundles"),
+      ])
+      const [rawMaterialsData, finishedGoodsData, suppliersData, locationsData, categoriesData, bundlesData] = await Promise.all([
+        rawMaterialsRes.json(), finishedGoodsRes.json(), suppliersRes.json(), locationsRes.json(), categoriesRes.json(), bundlesRes.json()
+      ])
+      setRawMaterials(rawMaterialsData)
+      setFinishedGoods(finishedGoodsData)
+      setProductBundles(bundlesData)
+      setSuppliers(suppliersData)
+      setLocations(locationsData)
+      setCategories(categoriesData.data || [])
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to fetch inventory data", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -282,8 +292,10 @@ const [categoryFilter, setCategoryFilter] = useState("all")
   }
 
   const resetForm = () => {
-    setFormData({ name: "", sku: "", description: "", unit: "", cost: "", price: "",
-      minimumStock: "", supplierId: "", locationId: "", imageUrl: "" , categoryId :""})
+    setFormData({ name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
+      minimumStock: "0", supplierId: "", locationId: "", imageUrl: "", categoryId: "",
+      components: []
+    })
   }
 
  const openEditDialog = (item) => {
@@ -295,6 +307,12 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     minimumStock: item.minimumStock?.toString() || "", supplierId: item.supplierId || "",
     locationId: item.locationId || "", imageUrl: item.imageUrl || "",
     categoryId: item.categoryId || "",
+    components: item.items?.map(c => ({
+      finishedGoodId: c.finishedGood.id,
+      name: c.finishedGood.name,
+      sku: c.finishedGood.sku,
+      quantity: c.quantity
+    })) || []
   })
   setIsAddDialogOpen(true)
   setTimeout(() => setLoadingEditId(null), 300)
@@ -308,8 +326,9 @@ const [categoryFilter, setCategoryFilter] = useState("all")
   }
 
   const getStatusBadge = (item) => {
+    if (activeTab === "bundles") return <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50">Bundle</Badge>
     if (item.quantity <= 0) return <Badge variant="destructive">Out of Stock</Badge>
-    if (item.quantity <= item.minimumStock) return <Badge variant="secondary">Low Stock</Badge>
+    if (item.quantity <= (item.minimumStock || 0)) return <Badge variant="secondary">Low Stock</Badge>
     return <Badge variant="default">In Stock</Badge>
   }
 
@@ -347,6 +366,12 @@ const filteredFinishedGoods = finishedGoods.filter((item) => {
   const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
   const matchesCategory = categoryFilter === "all" || item.categoryId === categoryFilter
   return matchesSearch && matchesStatusFilter(item) && matchesLocation && matchesCategory
+})
+
+const filteredBundles = productBundles.filter((item) => {
+  const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  return matchesSearch && matchesStatusFilter(item)
 })
 
   const handleItemSelect = (itemId) => {
@@ -465,7 +490,11 @@ const clearAllFilters = () => {
     )
   }
 
-  const currentItems = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
+  const currentItems = 
+    activeTab === "raw-materials" ? filteredRawMaterials : 
+    activeTab === "bundles" ? filteredBundles :
+    filteredFinishedGoods
+  
   const selectedItemsData = currentItems.filter((item) => selectedItems.includes(item.id))
 
   return (
@@ -493,7 +522,11 @@ const clearAllFilters = () => {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  {editingItem ? "Edit" : "Add"} {activeTab === "raw-materials" ? "Raw Material" : "Finished Good"}
+                  {editingItem ? "Edit" : "Add"} {
+                    activeTab === "raw-materials" ? "Raw Material" : 
+                    activeTab === "bundles" ? "Product Bundle" : 
+                    "Finished Good"
+                  }
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -521,7 +554,7 @@ const clearAllFilters = () => {
                     <Input id="cost" type="number" step="0.01" value={formData.cost} onChange={(e) => setFormData({ ...formData, cost: e.target.value })} required />
                   </div>
                 </div>
-                {activeTab === "finished-goods" && (
+                {(activeTab === "finished-goods" || activeTab === "bundles") && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="price">Price *</Label>
@@ -551,18 +584,98 @@ const clearAllFilters = () => {
   </div>
 </div>
 
-{activeTab === "finished-goods" && (
-  <div>
-    <Label htmlFor="categoryId">Category</Label>
-    <Select value={formData.categoryId} onValueChange={(value) => setFormData({ ...formData, categoryId: value })}>
-      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-      <SelectContent>
-        <SelectItem value="none">No Category</SelectItem>
-        {categories.map((cat) => (
-          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+{activeTab === "bundles" && (
+  <div className="space-y-4 pt-2 border-t mt-4">
+    <div className="space-y-0.5">
+      <Label className="text-base font-semibold">Bundle Composition (BOM)</Label>
+      <p className="text-xs text-muted-foreground">Select the finished goods that make up this bundle</p>
+    </div>
+
+    <div className="space-y-3 bg-muted/40 p-4 rounded-lg border border-dashed">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          placeholder="Search items to add to bundle..." 
+          className="pl-9 h-9"
+          onChange={(e) => {
+            const term = e.target.value.toLowerCase()
+            if (term.length < 2) { setCompResults([]); return }
+            const results = finishedGoods.filter(i => 
+              (i.name.toLowerCase().includes(term) || i.sku.toLowerCase().includes(term)) &&
+              !formData.components.some(c => c.finishedGoodId === i.id)
+            ).slice(0, 5)
+            setCompResults(results)
+          }}
+        />
+        {compResults.length > 0 && (
+          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg overflow-hidden">
+            {compResults.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent text-left"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    components: [...formData.components, { finishedGoodId: item.id, name: item.name, sku: item.sku, quantity: 1 }]
+                  })
+                  setCompResults([])
+                }}
+              >
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
+                </div>
+                <Plus className="h-4 w-4 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+        {formData.components.length === 0 ? (
+          <p className="text-center text-xs text-muted-foreground py-4 italic">No items added yet</p>
+        ) : (
+          formData.components.map((comp, idx) => (
+            <div key={comp.finishedGoodId} className="flex items-center gap-3 bg-background p-2 rounded-md border text-sm">
+              <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{comp.name}</p>
+                <p className="text-[10px] text-muted-foreground font-mono truncate">{comp.sku}</p>
+              </div>
+              <div className="w-20">
+                <Input 
+                  type="number" 
+                  min={1} 
+                  value={comp.quantity} 
+                  onChange={(e) => {
+                    const newComps = [...formData.components]
+                    newComps[idx].quantity = parseInt(e.target.value) || 1
+                    setFormData({ ...formData, components: newComps })
+                  }}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    components: formData.components.filter((_, i) => i !== idx)
+                  })
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   </div>
 )}
                 {activeTab === "raw-materials" && (
@@ -714,8 +827,10 @@ const clearAllFilters = () => {
 
       {/* ── Tabs ── */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList>
+        <TabsList className="mb-4">
           <TabsTrigger value="finished-goods">Finished Goods</TabsTrigger>
+          {/* <TabsTrigger value="raw-materials">Raw Materials</TabsTrigger> */}
+          <TabsTrigger value="bundles">Product Bundles</TabsTrigger>
         </TabsList>
 
         {/* Raw Materials */}
@@ -838,6 +953,95 @@ const clearAllFilters = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </TabsContent>
+
+        {/* Product Bundles */}
+        <TabsContent value="bundles">
+          {filteredBundles.length > 0 && (
+            <div className="flex items-center gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="select-all-bundles" checked={selectAll} onCheckedChange={handleSelectAll} />
+                <label htmlFor="select-all-bundles" className="text-sm font-medium">
+                  Select All ({filteredBundles.length})
+                </label>
+              </div>
+              {selectedItems.length > 0 && <Badge variant="secondary">{selectedItems.length} selected</Badge>}
+            </div>
+          )}
+          <div className="grid gap-4">
+            {filteredBundles.length === 0 ? (
+              <div className="text-center py-12 border rounded-xl bg-muted/20">
+                <Layers className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                <h3 className="text-lg font-medium">No bundles found</h3>
+                <p className="text-muted-foreground">Create your first bundle to get started</p>
+              </div>
+            ) : (
+              filteredBundles.map((item) => (
+                <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-4 flex-1">
+                        <Checkbox checked={selectedItems.includes(item.id)} onCheckedChange={() => handleItemSelect(item.id)} className="mt-1" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Layers className="h-4 w-4 text-blue-500" />
+                            <h3 className="font-semibold">{item.name}</h3>
+                            <Badge variant="outline" className="font-mono">{item.sku}</Badge>
+                            {getStatusBadge(item)}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">{item.description || "No description provided."}</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Components</p>
+                              <p className="font-semibold flex items-center gap-1.5">
+                                <LinkIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                {item.items?.length || 0} items
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sales Price</p>
+                              <p className="font-semibold text-emerald-600">PKR {item.price?.toLocaleString() || 0}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Cost</p>
+                              <p className="font-semibold">PKR {item.cost?.toLocaleString() || 0}</p>
+                            </div>
+                          </div>
+                          
+                          {item.items?.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {item.items.slice(0, 3).map(bi => (
+                                <Badge key={bi.id} variant="secondary" className="bg-muted/50 text-[10px] font-normal">
+                                  {bi.quantity}x {bi.finishedGood.sku}
+                                </Badge>
+                              ))}
+                              {item.items.length > 3 && (
+                                <Badge variant="secondary" className="bg-muted/50 text-[10px] font-normal">
+                                  +{item.items.length - 3} more
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {can(PERMISSIONS.INVENTORY_EDIT) && (
+                          <Button size="sm" variant="outline" disabled={loadingEditId === item.id || deletingItemId === item.id} onClick={() => openEditDialog(item)}>
+                            {loadingEditId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4 text-muted-foreground" />}
+                          </Button>
+                        )}
+                        {can(PERMISSIONS.INVENTORY_EDIT) && (
+                          <Button size="sm" variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50" disabled={deletingItemId === item.id} onClick={() => handleDelete(item.id)}>
+                            {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

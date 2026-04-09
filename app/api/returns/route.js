@@ -105,42 +105,93 @@ export async function POST(request) {
     // Create the return with items and update inventory in a transaction
     // Increased timeout to 15s to prevent P2028 errors on slower connections
     const returnData = await prisma.$transaction(async (tx) => {
-      // 1. Pre-process items to determine types and target quantities
-      const processedItems = await Promise.all(items.map(async (item) => {
+      // 1. Pre-process items to determine types and handle bundle explosion
+      // We use flatMap because one bundle item can explode into multiple component items
+      const processedItems = []
+      
+      for (const item of items) {
+        const quantity = Number(item.quantity)
+        
+        // Check for raw material first
         const rawMaterial = await tx.rawMaterial.findUnique({
           where: { id: item.imsItemId },
           select: { id: true }
         })
-        
-        const itemType = rawMaterial ? 'raw_material' : 'finished_good'
-        const quantity = Number(item.quantity)
 
-        // 2. Perform the stock update immediately within the transaction
-        if (itemType === 'raw_material') {
+        if (rawMaterial) {
+          // It's a raw material - simple update
           await tx.rawMaterial.update({
             where: { id: item.imsItemId },
             data: { quantity: { increment: quantity } }
           })
-        } else {
+          processedItems.push({
+            orderItemId: item.orderItemId,
+            quantity,
+            reason: item.reason,
+            condition: item.condition,
+            notes: item.notes,
+            itemType: 'raw_material',
+            rawMaterialId: item.imsItemId
+          })
+          continue
+        }
+
+        // Check for finished good
+        const finishedGood = await tx.finishedGood.findUnique({
+          where: { id: item.imsItemId }
+        })
+
+        if (finishedGood) {
+          // Simple finished good - normal update
           await tx.finishedGood.update({
             where: { id: item.imsItemId },
             data: { quantity: { increment: quantity } }
           })
+          processedItems.push({
+            orderItemId: item.orderItemId,
+            quantity,
+            reason: item.reason,
+            condition: item.condition,
+            notes: item.notes,
+            itemType: 'finished_good',
+            finishedGoodId: item.imsItemId
+          })
+          continue
         }
 
-        return {
-          orderItemId: item.orderItemId,
-          quantity,
-          reason: item.reason,
-          condition: item.condition,
-          notes: item.notes,
-          itemType,
-          ...(itemType === 'raw_material'
-            ? { rawMaterialId: item.imsItemId }
-            : { finishedGoodId: item.imsItemId }
-          )
+        // Check for product bundle
+        const bundle = await tx.productBundle.findUnique({
+          where: { id: item.imsItemId },
+          include: { 
+            items: {
+              include: { finishedGood: true }
+            }
+          }
+        })
+
+        if (bundle) {
+          // EXPLODE BUNDLE: For each component, update inventory and add to return record
+          for (const bundleItem of bundle.items) {
+            const componentQty = quantity * bundleItem.quantity
+            
+            await tx.finishedGood.update({
+              where: { id: bundleItem.finishedGoodId },
+              data: { quantity: { increment: componentQty } }
+            })
+
+            processedItems.push({
+              orderItemId: item.orderItemId,
+              quantity: componentQty,
+              reason: item.reason,
+              condition: item.condition,
+              notes: `(Component of Bundle: ${bundle.sku}) ${item.notes || ""}`,
+              itemType: 'finished_good',
+              finishedGoodId: bundleItem.finishedGoodId
+            })
+          }
+          continue
         }
-      }))
+      }
 
       // 3. Create the return record with its items
       return await tx.return.create({
