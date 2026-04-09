@@ -24,6 +24,8 @@ model User {
   createdPurchaseOrders    PurchaseOrder[]       @relation("CreatedBy")
   receivingRecords         ReceivingRecord[]
   createdSalesOrders       SalesOrder[]          @relation("CreatedBy")
+  createdReturns           Return[]              @relation("CreatedBy")
+  scannedParcels           ScannedParcel[]       @relation("ScannedBy")
 
   @@map("users")
 }
@@ -102,6 +104,7 @@ model RawMaterial {
   supplier              Supplier               @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   receivingRecords      ReceivingRecord[]      @relation("ReceivingRawMaterial")
   salesOrderItems       SalesOrderItem[]
+  returnItems           ReturnItem[]           @relation("ReturnItemRawMaterial")
 
   @@map("raw_materials")
 }
@@ -144,6 +147,7 @@ model FinishedGood {
   salesOrderItems         SalesOrderItem[]
   inventorySettings       InventoryReorderSettings?
   inventoryOrders         InventoryOrder[]         @relation("InventoryOrders")
+  returnItems             ReturnItem[]             @relation("ReturnItemFinishedGood")
 
   @@map("finished_goods")
 }
@@ -425,6 +429,56 @@ model InventoryOrder {
   @@map("inventory_orders")
 }
 
+model Return {
+  id              String         @id @default(cuid())
+  returnNumber    String         @unique
+  trackingNumber  String
+  orderNumber     String
+  orderId         String
+  customerId      String?
+  platformStoreId String?
+  status          ReturnStatus   @default(PENDING)
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdById     String
+  createdBy       User           @relation("CreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  items           ReturnItem[]
+
+  @@map("returns")
+}
+
+model ReturnItem {
+  id             String               @id @default(cuid())
+  returnId       String
+  orderItemId    String
+  rawMaterialId  String?
+  finishedGoodId String?
+  itemType       ItemType             // raw_material or finished_good
+  quantity       Int
+  reason         String
+  condition      ReturnItemCondition
+  notes          String?
+  createdAt      DateTime             @default(now())
+  return         Return               @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  rawMaterial    RawMaterial?         @relation("ReturnItemRawMaterial", fields: [rawMaterialId], references: [id], onDelete: SetNull)
+  finishedGood   FinishedGood?        @relation("ReturnItemFinishedGood", fields: [finishedGoodId], references: [id], onDelete: SetNull)
+
+  @@map("return_items")
+}
+
+model ScannedParcel {
+  id             String   @id @default(cuid())
+  trackingNumber String
+  orderData      Json
+  isFlagged      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  userId         String
+  user           User     @relation("ScannedBy", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("scanned_parcels")
+}
+
 enum Role {
   ADMIN
   MANAGER
@@ -525,4 +579,19 @@ enum InventoryOrderStatus {
   PENDING
   RECEIVED
   CANCELLED
+}
+
+enum ReturnStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+enum ReturnItemCondition {
+  GOOD
+  DAMAGED
+  DEFECTIVE
+  EXPIRED
+  USED
 }

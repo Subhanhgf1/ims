@@ -17,6 +17,8 @@ export async function GET() {
       todayShippedOrders,
       totalInventoryValue,
       recentActivities,
+      shippedOrders,
+      returns,
     ] = await Promise.all([
       // Raw materials count
       prisma.rawMaterial.count(),
@@ -83,15 +85,32 @@ Promise.all([
   return rawValue + finishedValue
 }),
 
-      // Recent activities (last 10 receiving records)
+      // Recent activities (last 5 receiving records)
       prisma.receivingRecord.findMany({
-        take: 10,
+        take: 5,
         orderBy: { createdAt: "desc" },
         include: {
           user: { select: { name: true } },
           rawMaterial: { select: { name: true } },
           finishedGood: { select: { name: true } },
+          purchaseOrder: { select: { poNumber: true } },
         },
+      }),
+
+      // Recent Outbound (last 5 shipped orders)
+      prisma.salesOrder.findMany({
+        where: { status: { in: ["SHIPPED", "DELIVERED"] } },
+        take: 5,
+        orderBy: { updatedAt: "desc" },
+      }),
+
+      // Recent Failed Deliveries (last 5 returns)
+      prisma.return.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        include: {
+          createdBy: { select: { name: true } }
+        }
       }),
     ])
 
@@ -108,14 +127,34 @@ Promise.all([
         todayReceived: todayReceivedOrders,
         todayShipped: todayShippedOrders,
       },
-      recentActivities: recentActivities.map((activity) => ({
-        id: activity.id,
-        type: "RECEIVING",
-        description: `${activity.user.name} received ${activity.quantity} units of ${
-          activity.rawMaterial?.name || activity.finishedGood?.name
-        }`,
-        timestamp: activity.createdAt,
-      })),
+      recentActivities: [
+        ...recentActivities.map((activity) => ({
+          id: `in-${activity.id}`,
+          type: "INBOUND",
+          orderNumber: activity.purchaseOrder?.poNumber || "N/A",
+          description: `Received ${activity.quantity} units of ${
+            activity.rawMaterial?.name || activity.finishedGood?.name
+          }`,
+          user: activity.user.name,
+          timestamp: activity.createdAt,
+        })),
+        ...shippedOrders.map((order) => ({
+          id: `out-${order.id}`,
+          type: "OUTBOUND",
+          orderNumber: order.soNumber,
+          description: `Order shipped to customer`,
+          user: "System",
+          timestamp: order.updatedAt,
+        })),
+        ...returns.map((ret) => ({
+          id: `fd-${ret.id}`,
+          type: "FAILED_DELIVERY",
+          orderNumber: ret.orderNumber,
+          description: `Failed delivery processed from queue`,
+          user: ret.createdBy?.name || "System",
+          timestamp: ret.createdAt,
+        })),
+      ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 10),
     }
 
     return NextResponse.json(stats)

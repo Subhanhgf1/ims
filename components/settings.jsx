@@ -66,6 +66,15 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
+    label: "Failed Delivery",
+    keys: [
+      { key: PERMISSIONS.FAILED_DELIVERY_VIEW,    label: "View Page" },
+      { key: PERMISSIONS.FAILED_DELIVERY_SCAN,    label: "Scan Parcels" },
+      { key: PERMISSIONS.FAILED_DELIVERY_PROCESS, label: "Process / Restock" },
+      { key: PERMISSIONS.FAILED_DELIVERY_DELETE,  label: "Delete from Queue" },
+    ],
+  },
+  {
     label: "System",
     keys: [
       { key: PERMISSIONS.SETTINGS_VIEW, label: "Access Settings" },

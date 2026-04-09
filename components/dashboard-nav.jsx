@@ -3,24 +3,29 @@
 import { usePathname, useRouter } from "next/navigation"
 import { Package, TrendingUp, TrendingDown, BarChart3, Settings, Factory, Boxes, LogOut, Menu, X } from "lucide-react"
 import { useAuth } from "@/lib/auth"
+import { usePermissions } from "@/hooks/use-permissions"
+import { PERMISSIONS } from "@/lib/permissions"
 import { useState } from "react"
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, href: "/dashboard" },
-  { id: "inventory", label: "Inventory", icon: Package, href: "/inventory" },
-  // { id: "inventory-management", label: "Inventory Mgmt", icon: Boxes, href: "/inventory-management" },
-  { id: "inbound", label: "Inbound", icon: TrendingDown, href: "/inbound" },
-  { id: "outbound", label: "Outbound", icon: TrendingUp, href: "/outbound" },
-  // { id: "production", label: "Production", icon: Factory, href: "/production" },
-  // { id: "reports", label: "Reports", icon: BarChart3, href: "/reports" },
-  { id: "settings", label: "Settings", icon: Settings, href: "/settings" },
+  { id: "inventory", label: "Inventory", icon: Package, href: "/inventory", permission: PERMISSIONS.INVENTORY_VIEW },
+  { id: "inbound", label: "Inbound", icon: TrendingDown, href: "/inbound", permission: PERMISSIONS.INBOUND_VIEW },
+  { id: "outbound", label: "Outbound", icon: TrendingUp, href: "/outbound", permission: PERMISSIONS.OUTBOUND_VIEW },
+  { id: "returns", label: "Failed Delivery", icon: Boxes, href: "/returns", permission: PERMISSIONS.FAILED_DELIVERY_VIEW },
+  { id: "settings", label: "Settings", icon: Settings, href: "/settings", permission: PERMISSIONS.SETTINGS_VIEW },
 ]
 
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { can } = usePermissions()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const filteredNavItems = NAV_ITEMS.filter(item => 
+    !item.permission || can(item.permission)
+  )
 
   const handleLogout = async () => {
     await logout()
@@ -79,7 +84,7 @@ export default function DashboardNav() {
         lg:translate-x-0`}
       >
         <nav className="p-4 space-y-2">
-          {NAV_ITEMS.map((item) => {
+          {filteredNavItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href || (pathname === "/" && item.href === "/dashboard")
 

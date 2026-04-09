@@ -16,6 +16,7 @@ import {
   Activity,
   Loader2,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
@@ -235,17 +236,42 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-3">
               {stats.recentActivities.length > 0 ? (
-                stats.recentActivities.slice(0, 5).map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
+                stats.recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-4 p-3 rounded-lg border bg-white/50">
+                    <div className={`mt-1 p-2 rounded-full ${
+                      activity.type === "INBOUND" ? "bg-green-100 text-green-600" :
+                      activity.type === "OUTBOUND" ? "bg-blue-100 text-blue-600" :
+                      "bg-orange-100 text-orange-600"
+                    }`}>
+                      {activity.type === "INBOUND" ? <CheckCircle className="h-4 w-4" /> :
+                       activity.type === "OUTBOUND" ? <TrendingUp className="h-4 w-4" /> :
+                       <RotateCcw className="h-4 w-4" />}
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm">{activity.description}</p>
-                      <p className="text-xs text-muted-foreground">{formatDate(activity.timestamp)}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold truncate capitalize">
+                          {activity.type.replace("_", " ").toLowerCase()}
+                        </p>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatDate(activity.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 leading-tight my-1">
+                        {activity.description}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] font-mono px-1.5 h-5">
+                          #{activity.orderNumber}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground italic">
+                          by {activity.user}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">No recent activities</p>
+                <p className="text-sm text-muted-foreground text-center py-6">No recent activities</p>
               )}
             </div>
           </CardContent>
