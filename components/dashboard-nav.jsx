@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { id: "inbound", label: "Inbound", icon: TrendingDown, href: "/inbound", permission: PERMISSIONS.INBOUND_VIEW },
   { id: "outbound", label: "Outbound", icon: TrendingUp, href: "/outbound", permission: PERMISSIONS.OUTBOUND_VIEW },
   { id: "returns", label: "Failed Delivery", icon: Boxes, href: "/returns", permission: PERMISSIONS.FAILED_DELIVERY_VIEW },
+  {id: "reports", label: "Reports", icon: Factory, href: "/reports", permission: PERMISSIONS.REPORTS_VIEW },
   { id: "settings", label: "Settings", icon: Settings, href: "/settings", permission: PERMISSIONS.SETTINGS_VIEW },
 ]
 
