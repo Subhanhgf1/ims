@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: Settings, href: "/settings", permission: PERMISSIONS.SETTINGS_VIEW },
 ]
 
+
 export default function DashboardNav() {
   const pathname = usePathname()
   const router = useRouter()
