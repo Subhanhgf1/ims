@@ -23,6 +23,8 @@ import { usePermissions } from "@/hooks/use-permissions"
 import { PERMISSIONS } from "@/lib/permissions"
 import AdvancedInventoryModal from "./advanced-inventory-modal"
 import BulkEditModal from "./bulk-edit-modal"
+import SmartMinStockModal from "./smart-min-stock-modal"
+import { Sparkles } from "lucide-react"
 
 const STATUS_OPTIONS = [
   { value: "in-stock", label: "In Stock" },
@@ -36,6 +38,7 @@ const BULK_ACTIONS = [
     group: "Edit",
     actions: [
       { id: "bulk-edit",    label: "Edit Selected",       icon: PencilLine,    variant: "default" },
+      { id: "smart-min",    label: "Smart Min Stock",     icon: Sparkles,      variant: "default" },
       { id: "restock",       label: "Restock Selected",    icon: Truck,         variant: "success" },
     ],
   },
@@ -173,6 +176,7 @@ export default function Inventory() {
   const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false)
   const [selectedItems, setSelectedItems] = useState([])
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false)
+  const [isSmartMinStockOpen, setIsSmartMinStockOpen] = useState(false)
   const [selectAll, setSelectAll] = useState(false)
 
   // ─── Loading States ───────────────────────────────────────────────────────
@@ -429,6 +433,9 @@ const filteredBundles = productBundles.filter((item) => {
           const query = new URLSearchParams({ restock: "true" }).toString()
           window.location.href = `/inbound?${query}`
           break
+      case "smart-min":
+        setIsSmartMinStockOpen(true)
+        break
       case "delete":
         if (!confirm(`Delete ${selectedItems.length} item${selectedItems.length !== 1 ? "s" : ""}? This cannot be undone.`)) return
         setBulkLoadingAction("delete")
@@ -519,6 +526,12 @@ const clearAllFilters = () => {
                 </Button>
               )}
             </DialogTrigger>
+            {activeTab === "finished-goods" && can(PERMISSIONS.INVENTORY_EDIT) && (
+              <Button variant="outline" onClick={() => setIsSmartMinStockOpen(true)} className="border-primary/20 hover:bg-primary/5 text-primary">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Smart Min Stock (All)
+              </Button>
+            )}
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
@@ -1063,6 +1076,13 @@ const clearAllFilters = () => {
         suppliers={suppliers}
         locations={locations}
         categories={categories}
+      />
+
+      <SmartMinStockModal 
+        isOpen={isSmartMinStockOpen}
+        onClose={() => setIsSmartMinStockOpen(false)}
+        selectedIds={selectedItems.length > 0 ? selectedItems : []}
+        onUpdate={fetchData}
       />
     </div>
   )
