@@ -23,9 +23,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/use-permissions"
 import { PERMISSIONS } from "@/lib/permissions"
-import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2, MoreVertical } from "lucide-react"
+import { Plus, Eye, Package, Truck, CheckCircle, Clock, Loader2, Download, Trash2, MoreVertical, FileText  } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateShippingReportPDF } from "@/lib/pdf-generator"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 export default function Outbound() {
   const { user } = useAuth()
