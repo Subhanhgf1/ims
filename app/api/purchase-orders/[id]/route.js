@@ -81,7 +81,21 @@ export async function PATCH(request, { params }) {
 
       await Promise.all(itemOperations)
 
-      // 3. Update the Order Header
+      // 3. Re-calculate status based on all items
+      const updatedItems = await tx.purchaseOrderItem.findMany({
+        where: { purchaseOrderId: id },
+      })
+
+      const allReceived = updatedItems.every((item) => item.received >= item.quantity)
+      const someReceived = updatedItems.some((item) => item.received > 0)
+
+      const newStatus = allReceived
+        ? "RECEIVED"
+        : someReceived
+        ? "PARTIALLY_RECEIVED"
+        : "PENDING"
+
+      // 4. Update the Order Header
       return await tx.purchaseOrder.update({
         where: { id },
         data: {
@@ -89,6 +103,7 @@ export async function PATCH(request, { params }) {
           expectedDate: new Date(expectedDate),
           notes,
           totalValue,
+          status: newStatus,
         },
         include: {
           supplier: { select: { name: true } },

@@ -103,6 +103,11 @@ export async function POST(request, { params }) {
         const receivedQuantity = Number.parseInt(receivedItem.receivedQuantity) || 0
         if (receivedQuantity <= 0) continue
 
+        const remaining = poItem.quantity - poItem.received
+        if (receivedQuantity > remaining) {
+          throw new Error(`Cannot receive ${receivedQuantity} units for ${poItem.rawMaterial?.name ?? poItem.finishedGood?.name}. Only ${remaining} units remaining in order.`)
+        }
+
         const newReceivedTotal = poItem.received + receivedQuantity
 
         poItemUpdates.push(

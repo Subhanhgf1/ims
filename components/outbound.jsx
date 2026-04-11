@@ -717,66 +717,52 @@ const generateShippingReport = async (orderId) => {
                       {can(PERMISSIONS.REPORTS_FINANCIALS) && <TableCell>{formatCurrency(order.totalValue)}</TableCell>}
                   
                       <TableCell>
-  <div className="relative">
-    <Button
-      variant="ghost"
-      size="sm"
-      className="h-8 w-8 p-0"
-      onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
-    >
-      <MoreVertical className="h-4 w-4" />
-    </Button>
-    {openMenuId === order.id && (
-      <>
-        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-        <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
-          <button
-            onClick={() => { openViewDialog(order); setOpenMenuId(null) }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <Eye className="h-4 w-4" /> View Details
-          </button>
-          {can(PERMISSIONS.OUTBOUND_EDIT) && (order.status === "PREPARING" || order.status === "READY") && (
-            <button
-              onClick={() => { openEditDialog(order); setOpenMenuId(null) }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-              Edit Order
-            </button>
-          )}
-          {can(PERMISSIONS.OUTBOUND_SHIP) && (order.status === "PREPARING" || order.status === "READY") && (
-            <button
-              onClick={() => { openShipDialog(order); setOpenMenuId(null) }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <Truck className="h-4 w-4" /> Ship Order
-            </button>
-          )}
-          <div className="border-t border-gray-100 my-1" />
-          <button
-            onClick={() => { generateShippingReport(order.id); setOpenMenuId(null) }}
-            disabled={generatingReport}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Download Report
-          </button>
-          {can(PERMISSIONS.OUTBOUND_DELETE) && order.status !== "SHIPPED" && order.status !== "DELIVERED" && (
-            <button
-              onClick={() => { handleDeleteOrder(order.id); setOpenMenuId(null) }}
-              disabled={deletingId === order.id}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-            >
-              {deletingId === order.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              Delete Order
-            </button>
-          )}
-        </div>
-      </>
-    )}
-  </div>
-</TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => openViewDialog(order)}>
+                              <Eye className="h-4 w-4 mr-2" /> View Details
+                            </DropdownMenuItem>
+                            
+                            {can(PERMISSIONS.OUTBOUND_EDIT) && (order.status === "PREPARING" || order.status === "READY") && (
+                              <DropdownMenuItem onClick={() => openEditDialog(order)}>
+                                <FileText className="h-4 w-4 mr-2" /> Edit Order
+                              </DropdownMenuItem>
+                            )}
+
+                            {can(PERMISSIONS.OUTBOUND_SHIP) && (order.status === "PREPARING" || order.status === "READY") && (
+                              <DropdownMenuItem onClick={() => openShipDialog(order)}>
+                                <Truck className="h-4 w-4 mr-2" /> Ship Order
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem 
+                              onClick={() => generateShippingReport(order.id)}
+                              disabled={generatingReport}
+                            >
+                              {generatingReport ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                              Download Report
+                            </DropdownMenuItem>
+
+                            {can(PERMISSIONS.OUTBOUND_DELETE) && order.status !== "SHIPPED" && order.status !== "DELIVERED" && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteOrder(order.id)}
+                                disabled={deletingId === order.id}
+                                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              >
+                                {deletingId === order.id ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                                Delete Order
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

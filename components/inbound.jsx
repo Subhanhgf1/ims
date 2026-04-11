@@ -15,6 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { RequiredLabel } from "@/components/ui/required-label"
 import { ItemSelector } from "@/components/ui/item-selector"
 import { Textarea } from "@/components/ui/textarea"
@@ -246,6 +253,21 @@ export default function Inbound() {
         variant: "destructive",
       })
       return
+    }
+
+    // Client-side validation against overage
+    for (const item of validItems) {
+      const orderItem = selectedOrder.items.find(i => i.id === item.itemId)
+      const qty = Number.parseInt(item.receivedQuantity)
+      const remaining = orderItem.quantity - orderItem.received
+      if (qty > remaining) {
+        toast({
+          title: "Invalid Quantity",
+          description: `You cannot receive ${qty} for ${orderItem.rawMaterial?.name ?? orderItem.finishedGood?.name}. Only ${remaining} pending.`,
+          variant: "destructive",
+        })
+        return
+      }
     }
 
     try {
@@ -667,63 +689,49 @@ export default function Inbound() {
                         {can(PERMISSIONS.REPORTS_FINANCIALS) && <TableCell className="text-gray-700">{formatCurrency(order.totalValue)}</TableCell>}
                         <TableCell className="text-gray-700">{order.createdBy?.name}</TableCell>
                         <TableCell>
-                          <div className="relative">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={() => setOpenMenuId(openMenuId === order.id ? null : order.id)}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                            {openMenuId === order.id && (
-                              <>
-                                <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
-                                <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
-                                  <button
-                                    onClick={() => { openViewDialog(order); setOpenMenuId(null) }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                  >
-                                    <Eye className="h-4 w-4" /> View Details
-                                  </button>
-                                  {can(PERMISSIONS.INBOUND_EDIT) && (order.status === "PENDING" || order.status === "PARTIALLY_RECEIVED") && (
-                                    <button
-                                      onClick={() => { openEditDialog(order); setOpenMenuId(null) }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                    >
-                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                      Edit Order
-                                    </button>
-                                  )}
-                                  {can(PERMISSIONS.INBOUND_EDIT) && order.status === "PENDING" && (
-                                    <button
-                                      onClick={() => { handleDeletePO(order.id); setOpenMenuId(null) }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="h-4 w-4" /> Delete Order
-                                    </button>
-                                  )}
-                                  {can(PERMISSIONS.INBOUND_RECEIVE) && canReceive(order) && (
-                                    <button
-                                      onClick={() => { openReceiveDialog(order); setOpenMenuId(null) }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                    >
-                                      <Package className="h-4 w-4" /> Receive Items
-                                    </button>
-                                  )}
-                                  <div className="border-t border-gray-100 my-1" />
-                                  <button
-                                    onClick={() => { generateReceivingReport(order.id); setOpenMenuId(null) }}
-                                    disabled={generatingReport}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                                  >
-                                    {generatingReport ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                    Download Report
-                                  </button>
-                                </div>
-                              </>
-                            )}
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => openViewDialog(order)}>
+                                <Eye className="h-4 w-4 mr-2" /> View Details
+                              </DropdownMenuItem>
+
+                              {can(PERMISSIONS.INBOUND_EDIT) && (order.status === "PENDING" || order.status === "PARTIALLY_RECEIVED") && (
+                                <DropdownMenuItem onClick={() => openEditDialog(order)}>
+                                  <FileText className="h-4 w-4 mr-2" /> Edit Order
+                                </DropdownMenuItem>
+                              )}
+
+                              {can(PERMISSIONS.INBOUND_RECEIVE) && canReceive(order) && (
+                                <DropdownMenuItem onClick={() => openReceiveDialog(order)}>
+                                  <Package className="h-4 w-4 mr-2" /> Receive Items
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem 
+                                onClick={() => generateReceivingReport(order.id)}
+                                disabled={generatingReport}
+                              >
+                                {generatingReport ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                                Download Report
+                              </DropdownMenuItem>
+
+                              {can(PERMISSIONS.INBOUND_EDIT) && order.status === "PENDING" && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeletePO(order.id)}
+                                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" /> Delete Order
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     )
