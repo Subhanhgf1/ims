@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/use-permissions"
 import { PERMISSIONS } from "@/lib/permissions"
-import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User, MoreVertical } from "lucide-react"
+import { Plus, Eye, CheckCircle, Clock, Loader2, Package, FileText, Download, Calendar, User, MoreVertical, Trash2 } from "lucide-react"
 import { getStatusColor, formatCurrency, formatDate } from "@/lib/utils"
 import { generateReceivingReportPDF } from "@/lib/pdf-generator"
 
@@ -437,13 +437,38 @@ export default function Inbound() {
       expectedDate: new Date(order.expectedDate).toISOString().split("T")[0],
       notes: order.notes || "",
       items: order.items.map((item) => ({
+        id: item.id,
         itemType: item.itemType,
         itemId: item.rawMaterialId || item.finishedGoodId,
         quantity: item.quantity.toString(),
         unitCost: item.unitCost.toString(),
+        received: item.received || 0,
       })),
     })
     setIsEditPODialogOpen(true)
+  }
+
+  const handleDeletePO = async (orderId) => {
+    if (!confirm("Are you sure you want to delete this inbound order? This action cannot be undone.")) return
+
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/purchase-orders/${orderId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast({ title: "Success", description: "Inbound order deleted successfully" })
+        fetchData()
+      } else {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleEditPO = async (e) => {
@@ -661,13 +686,21 @@ export default function Inbound() {
                                   >
                                     <Eye className="h-4 w-4" /> View Details
                                   </button>
-                                  {can(PERMISSIONS.INBOUND_EDIT) && order.status === "PENDING" && (
+                                  {can(PERMISSIONS.INBOUND_EDIT) && (order.status === "PENDING" || order.status === "PARTIALLY_RECEIVED") && (
                                     <button
                                       onClick={() => { openEditDialog(order); setOpenMenuId(null) }}
                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                     >
                                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                                       Edit Order
+                                    </button>
+                                  )}
+                                  {can(PERMISSIONS.INBOUND_EDIT) && order.status === "PENDING" && (
+                                    <button
+                                      onClick={() => { handleDeletePO(order.id); setOpenMenuId(null) }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" /> Delete Order
                                     </button>
                                   )}
                                   {can(PERMISSIONS.INBOUND_RECEIVE) && canReceive(order) && (
@@ -836,12 +869,27 @@ export default function Inbound() {
                           type="number"
                           value={item.quantity}
                           onChange={(e) => updatePOItem(index, "quantity", e.target.value)}
-                          className="h-9 text-xs border-gray-300"
+                          className={`h-9 text-xs border-gray-300 ${item.received > 0 && Number(item.quantity) < item.received ? "border-red-500" : ""}`}
                           placeholder="0"
+                          min={item.received || 0}
                           required
                         />
+                        {item.received > 0 && (
+                          <div className="text-[10px] text-orange-600 font-medium px-1">
+                             Min: {item.received} (Already received)
+                          </div>
+                        )}
                       </div>
-                      <Button type="button" variant="outline" size="sm" onClick={() => removePOItem(index)} className="h-9">Remove</Button>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => removePOItem(index)} 
+                        className={`h-9 text-red-500 hover:text-red-600 hover:bg-red-50 ${item.received > 0 ? "opacity-30 cursor-not-allowed" : ""}`}
+                        disabled={item.received > 0}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
                 </div>
