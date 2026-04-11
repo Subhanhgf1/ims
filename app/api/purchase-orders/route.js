@@ -47,18 +47,13 @@ export async function POST(request) {
   try {
     const data = await request.json()
     console.log ("here is data", data)
-    const { supplierId, expectedDate, notes, items } = data
+    const { supplierId, expectedDate, notes, items, createdById } = data
 
     if (!supplierId || !expectedDate || !items?.length) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Get the first user as default
-    const defaultUser = await prisma.user.findFirst()
-    if (!defaultUser) {
-      return NextResponse.json({ error: "No users found in system" }, { status: 400 })
-    }
-
+    
     const poNumber = generatePONumber()
 
     // Calculate total value
@@ -71,7 +66,7 @@ export async function POST(request) {
         expectedDate: new Date(expectedDate),
         notes,
         totalValue,
-        createdById: defaultUser.id,
+        createdById: createdById,
         items: {
           create: items.map((item) => ({
             itemType: item.itemType,
