@@ -162,6 +162,16 @@ export default function Inbound() {
       return
     }
 
+    const invalidItems = formData.items.filter(item => !item.quantity || Number(item.quantity) <= 0)
+    if (invalidItems.length > 0) {
+      toast({
+        title: "Error",
+        description: "All items must have a quantity greater than 0",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setSubmitting(true)
       const response = await fetch("/api/purchase-orders", {
@@ -497,6 +507,12 @@ export default function Inbound() {
     e.preventDefault()
     if (!formData.supplierId || !formData.expectedDate || !formData.items.length) {
       toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
+      return
+    }
+
+    const invalidItems = formData.items.filter(item => !item.quantity || Number(item.quantity) <= 0)
+    if (invalidItems.length > 0) {
+      toast({ title: "Error", description: "All items must have a quantity greater than 0", variant: "destructive" })
       return
     }
     try {
@@ -879,7 +895,7 @@ export default function Inbound() {
                           onChange={(e) => updatePOItem(index, "quantity", e.target.value)}
                           className={`h-9 text-xs border-gray-300 ${item.received > 0 && Number(item.quantity) < item.received ? "border-red-500" : ""}`}
                           placeholder="0"
-                          min={item.received || 0}
+                          min={Math.max(1, item.received || 1)}
                           required
                         />
                         {item.received > 0 && (
@@ -1034,6 +1050,7 @@ export default function Inbound() {
         className="h-9 text-xs border-gray-300"
         placeholder="0"
         style={{ pointerEvents: 'auto' }}
+        min="1"
         required
       />
     </div>

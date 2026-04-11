@@ -207,6 +207,16 @@ const generateShippingReport = async (orderId) => {
       return
     }
 
+    const invalidItems = formData.items.filter(item => !item.quantity || Number(item.quantity) <= 0)
+    if (invalidItems.length > 0) {
+      toast({
+        title: "Error",
+        description: "All items must have a quantity greater than 0",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setSubmitting(true)
       const response = await fetch("/api/sales-orders", {
@@ -467,6 +477,11 @@ const generateShippingReport = async (orderId) => {
     e.preventDefault()
     if (!formData.customerId || !formData.shipDate || !formData.items.length) {
       toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
+      return
+    }
+    const invalidItems = formData.items.filter(item => !item.quantity || Number(item.quantity) <= 0)
+    if (invalidItems.length > 0) {
+      toast({ title: "Error", description: "All items must have a quantity greater than 0", variant: "destructive" })
       return
     }
     try {
@@ -932,6 +947,8 @@ const generateShippingReport = async (orderId) => {
                           onChange={(e) => updateSOItem(index, "quantity", e.target.value)}
                           className="h-8 text-xs"
                           placeholder="0"
+                          min="1"
+                          required
                         />
                       </div>
                       <Button type="button" variant="outline" size="sm" onClick={() => removeSOItem(index)}>Remove</Button>
@@ -1084,6 +1101,8 @@ const generateShippingReport = async (orderId) => {
                           onChange={(e) => updateSOItem(index, "quantity", e.target.value)}
                           className="h-8 text-xs"
                           placeholder="0"
+                          min="1"
+                          required
                         />
                       </div>
                       {/* <div className="space-y-1">
