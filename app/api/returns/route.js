@@ -11,19 +11,52 @@ export async function GET(request) {
     const search = searchParams.get("search") || ""
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
+    const status = searchParams.get("status")
+    const startDate = searchParams.get("startDate")
+    const endDate = searchParams.get("endDate")
 
     const skip = (page - 1) * limit
 
-    // Build search filter
-    const where = search ? {
-      OR: [
-        { orderNumber: { contains: search, mode: 'insensitive' } },
-        { trackingNumber: { contains: search, mode: 'insensitive' } },
-        { returnNumber: { contains: search, mode: 'insensitive' } },
+    // Build filters
+    const where = {
+      AND: [
+        search ? {
+          OR: [
+            { orderNumber: { contains: search, mode: 'insensitive' } },
+            { trackingNumber: { contains: search, mode: 'insensitive' } },
+            { returnNumber: { contains: search, mode: 'insensitive' } },
+          ]
+        } : {},
+        status && status !== 'ALL' ? { status } : {},
+        startDate || endDate ? {
+          createdAt: {
+            ...(startDate ? { gte: new Date(startDate) } : {}),
+            ...(endDate ? { lte: new Date(endDate) } : {}),
+          }
+        } : {},
       ]
-    } : {}
+    }
 
-    const [returns, total] = await Promise.all([
+    // Filter for total stats (search and date only, ignoring status filter)
+    const statsWhere = {
+      AND: [
+        search ? {
+          OR: [
+            { orderNumber: { contains: search, mode: 'insensitive' } },
+            { trackingNumber: { contains: search, mode: 'insensitive' } },
+            { returnNumber: { contains: search, mode: 'insensitive' } },
+          ]
+        } : {},
+        startDate || endDate ? {
+          createdAt: {
+            ...(startDate ? { gte: new Date(startDate) } : {}),
+            ...(endDate ? { lte: new Date(endDate) } : {}),
+          }
+        } : {},
+      ]
+    }
+
+    const [returns, total, stats] = await Promise.all([
       prisma.return.findMany({
         where,
         include: {
@@ -39,8 +72,20 @@ export async function GET(request) {
         skip,
         take: limit,
       }),
-      prisma.return.count({ where })
+      prisma.return.count({ where }),
+      prisma.return.groupBy({
+        by: ['status'],
+        where: statsWhere,
+        _count: { _all: true }
+      })
     ])
+
+    const statsMap = stats.reduce((acc, curr) => {
+      acc[curr.status] = curr._count._all
+      return acc
+    }, { PENDING: 0, PROCESSING: 0, COMPLETED: 0, REJECTED: 0 })
+
+    const totalStats = Object.values(statsMap).reduce((a, b) => a + b, 0)
 
     // Transform the data to match what the component expects
     const transformedReturns = returns.map(ret => ({
@@ -69,6 +114,10 @@ export async function GET(request) {
 
     return NextResponse.json({
       data: transformedReturns,
+      stats: {
+        total: totalStats,
+        ...statsMap
+      },
       pagination: {
         total,
         page,

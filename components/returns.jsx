@@ -103,12 +103,22 @@ export default function Returns() {
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0, page: 1, limit: 10 })
   const [sortConfig, setSortConfig] = useState({ key: "createdAt", order: "desc" })
+  const [statusFilter, setStatusFilter] = useState("ALL")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [globalStats, setGlobalStats] = useState({
+    total: 0,
+    PENDING: 0,
+    PROCESSING: 0,
+    COMPLETED: 0,
+    REJECTED: 0
+  })
 
   // ── Fetch IMS inventory + existing returns on mount ────────────────────
   useEffect(() => {
     fetchPageData()
     fetchScanQueue()
-  }, [user, page, debouncedSearch, sortConfig])
+  }, [user, page, debouncedSearch, sortConfig, statusFilter, startDate, endDate])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -158,6 +168,9 @@ export default function Returns() {
         search: debouncedSearch,
         sortBy: sortConfig.key,
         sortOrder: sortConfig.order,
+        status: statusFilter,
+        startDate,
+        endDate
       }).toString()
 
       const [returnsRes, rawMaterialsRes, finishedGoodsRes, bundlesRes] = await Promise.all([
@@ -186,6 +199,9 @@ export default function Returns() {
         const result = await returnsRes.json()
         setReturns(result.data)
         setPagination(result.pagination)
+        if (result.stats) {
+          setGlobalStats(result.stats)
+        }
       }
     } catch (err) {
       console.error("Fetch error:", err)
@@ -498,14 +514,6 @@ export default function Returns() {
     }
   }
 
-  // ── Stats ──────────────────────────────────────────────────────────────
-  const stats = {
-    total: returns.length,
-    pending: returns.filter((r) => r.status === "PENDING").length,
-    completed: returns.filter((r) => r.status === "COMPLETED").length,
-    inQueue: scanQueue.filter((e) => e.status === "fetched").length,
-    flagged: scanQueue.filter((e) => e.isFlagged && e.status === "fetched").length,
-  }
 
   // ── Bulk Actions ───────────────────────────────────────────────────────
   const toggleParcelSelection = (trackingNumber) => {
@@ -794,8 +802,8 @@ export default function Returns() {
             <RotateCcw className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
+            <div className="text-2xl font-bold">{globalStats.total}</div>
+            <p className="text-xs text-muted-foreground">Across all results</p>
           </CardContent>
         </Card>
         <Card>
@@ -804,7 +812,7 @@ export default function Returns() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
+            <div className="text-2xl font-bold">{globalStats.PENDING}</div>
             <p className="text-xs text-muted-foreground">Awaiting action</p>
           </CardContent>
         </Card>
@@ -814,7 +822,7 @@ export default function Returns() {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.completed}</div>
+            <div className="text-2xl font-bold">{globalStats.COMPLETED}</div>
             <p className="text-xs text-muted-foreground">Restocked / resolved</p>
           </CardContent>
         </Card>
@@ -824,7 +832,7 @@ export default function Returns() {
             <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-700">{stats.flagged}</div>
+            <div className="text-2xl font-bold text-red-700">{scanQueue.filter((e) => e.isFlagged && e.status === "fetched").length}</div>
             <p className="text-xs text-red-600">Need call list logging</p>
           </CardContent>
         </Card>
@@ -1023,22 +1031,60 @@ export default function Returns() {
             <CardTitle>Failed Delivery Log</CardTitle>
             <CardDescription>All processed failed delivery records</CardDescription>
           </div>
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search Order or Tracking..."
-              className="pl-9 h-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-gray-50 border rounded-md px-2 py-1">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
+                className="bg-transparent border-0 text-xs focus:ring-0 p-0"
+              />
+              <span className="text-muted-foreground px-1">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
+                className="bg-transparent border-0 text-xs focus:ring-0 p-0"
+              />
+              {(startDate || endDate) && (
+                <button 
+                  onClick={() => { setStartDate(""); setEndDate(""); setPage(1) }}
+                  className="ml-1 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+              className="h-9 px-3 py-1 bg-white border rounded-md text-xs focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">All Statuses</option>
+              {Object.keys(STATUS_COLORS).map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search Order or Tracking..."
+                className="pl-9 h-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
