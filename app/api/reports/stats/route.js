@@ -168,10 +168,54 @@ export async function GET(request) {
       .sort((a, b) => b.totalMovement - a.totalMovement)
       .slice(0, 100);
 
+    // 8. Failed Delivery Analytics
+    const [reasonStats, conditionStats, statusStats, topReturnedItemsRaw] = await Promise.all([
+      prisma.returnItem.groupBy({
+        by: ['reason'],
+        where: { createdAt: { gte: startDate } },
+        _count: { _all: true }
+      }),
+      prisma.returnItem.groupBy({
+        by: ['condition'],
+        where: { createdAt: { gte: startDate } },
+        _count: { _all: true }
+      }),
+      prisma.return.groupBy({
+        by: ['status'],
+        where: { createdAt: { gte: startDate } },
+        _count: { _all: true }
+      }),
+      prisma.returnItem.groupBy({
+        by: ['finishedGoodId', 'rawMaterialId'],
+        where: { createdAt: { gte: startDate } },
+        _sum: { quantity: true },
+        orderBy: { _sum: { quantity: 'desc' } },
+        take: 5
+      })
+    ])
+
+    // Resolve item names for top returned items
+    const topReturnedItems = await Promise.all(topReturnedItemsRaw.map(async (row) => {
+      let name = "Unknown Item"
+      let sku = "N/A"
+      if (row.finishedGoodId) {
+        const item = await prisma.finishedGood.findUnique({ where: { id: row.finishedGoodId }, select: { name: true, sku: true } })
+        if (item) { name = item.name; sku = item.sku }
+      } else if (row.rawMaterialId) {
+        const item = await prisma.rawMaterial.findUnique({ where: { id: row.rawMaterialId }, select: { name: true, sku: true } })
+        if (item) { name = item.name; sku = item.sku }
+      }
+      return {
+        name,
+        sku,
+        quantity: row._sum.quantity || 0
+      }
+    }))
+
     const stats = {
       metrics: {
-        avgReturnTime: avgReturnTime, // Now a float
-        avgInboundTime: avgInboundTime, // Now a float
+        avgReturnTime: avgReturnTime,
+        avgInboundTime: avgInboundTime,
         inboundOnTimeRate: Math.round(inboundOnTimeRate),
         teamThroughput: returnsCount + inboundCount + outboundCount
       },
@@ -182,7 +226,13 @@ export async function GET(request) {
         { name: "Inbound", value: inboundCount },
         { name: "Outbound", value: outboundCount },
         { name: "Returns", value: returnsCount },
-      ]
+      ],
+      failedDeliveryStats: {
+        reasons: reasonStats.map(r => ({ name: r.reason, value: r._count._all })),
+        conditions: conditionStats.map(c => ({ name: c.condition, value: c._count._all })),
+        statuses: statusStats.map(s => ({ name: s.status, value: s._count._all })),
+        topItems: topReturnedItems
+      }
     }
 
     return NextResponse.json(stats)

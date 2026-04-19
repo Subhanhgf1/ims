@@ -62,6 +62,14 @@ export default function Reports() {
       ["Date", "Inbound", "Outbound", "Returns"],
       ...data.throughputTrends.map(t => [t.date, t.inbound, t.outbound, t.returns]),
       [],
+      ["Failed Delivery Reasons"],
+      ["Reason", "Count"],
+      ...(data.failedDeliveryStats?.reasons || []).map(r => [r.name, r.value]),
+      [],
+      ["Item Conditions"],
+      ["Condition", "Count"],
+      ...(data.failedDeliveryStats?.conditions || []).map(c => [c.name, c.value]),
+      [],
       ["Item Movement Details"],
       ["SKU", "Name", "Type", "Inbounded", "Outbounded", "Returned", "Total Movement"],
       ...(data.itemUsage || []).map(i => [i.sku, i.name, i.type, i.inbounded, i.outbounded, i.returned, i.totalMovement])
@@ -305,6 +313,131 @@ export default function Reports() {
               <p className="text-sm text-orange-700/80 dark:text-orange-400/80 mt-1">
                 Return processing speed is currently at {metrics?.avgReturnTime.toFixed(1)} hours per parcel. This accounts for {Math.round((distribution?.[2]?.value / metrics?.teamThroughput) * 100 || 0)}% of logistics workload.
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Failed Deliveries Analysis */}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <RefreshCcw className="h-5 w-5 text-orange-500" />
+              <CardTitle>Failed Delivery Reasons</CardTitle>
+            </div>
+            <CardDescription>Primary reasons for delivery failure in this period</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-4 items-center">
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data?.failedDeliveryStats?.reasons}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {data?.failedDeliveryStats?.reasons?.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#10b981'][index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {data?.failedDeliveryStats?.reasons?.map((r, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ['#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#10b981'][idx % 5] }} />
+                      <span className="text-muted-foreground">{r.name}</span>
+                    </div>
+                    <span className="font-bold">{r.value}</span>
+                  </div>
+                ))}
+                {(!data?.failedDeliveryStats?.reasons || data.failedDeliveryStats.reasons.length === 0) && (
+                  <p className="text-xs text-center text-muted-foreground opacity-50 py-8">No return reason data available</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              <CardTitle>Item Conditions</CardTitle>
+            </div>
+            <CardDescription>Condition of items upon return</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px] w-full mb-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data?.failedDeliveryStats?.conditions}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={60}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {data?.failedDeliveryStats?.conditions?.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#6b7280'][index % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              {data?.failedDeliveryStats?.conditions?.map((c, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 p-1.5 rounded border bg-gray-50/50">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#6b7280'][idx % 5] }} />
+                  <span className="truncate">{c.name}</span>
+                  <span className="ml-auto font-bold">{c.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Package2 className="h-5 w-5 text-blue-500" />
+              <CardTitle>Top 5 Most Returned Items</CardTitle>
+            </div>
+            <CardDescription>Products with the highest return frequency</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data?.failedDeliveryStats?.topItems} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                  <XAxis type="number" hide />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={150} 
+                    fontSize={11} 
+                    axisLine={false} 
+                    tickLine={false} 
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#f3f4f6' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} 
+                  />
+                  <Bar dataKey="quantity" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
