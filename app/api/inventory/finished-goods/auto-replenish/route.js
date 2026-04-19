@@ -100,7 +100,10 @@ export async function POST(request) {
     for (const [receivedAs, items] of Object.entries(groups)) {
       // Calculate overall expected date for this group (furthest lead time)
       const maxLeadTime = Math.max(...items.map((i) => i.leadTimeDays))
-      const expectedDate = addDays(startOfDay(new Date()), maxLeadTime)
+      
+      // Get current date in Pakistan timezone to avoid UTC midnight issues
+      const pktNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" }))
+      const expectedDate = addDays(startOfDay(pktNow), maxLeadTime)
 
       const poNumber = generatePONumber()
       const totalValue = items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0)
