@@ -12,12 +12,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Switch } from "@/components/ui/switch"
 import {
   Plus, Package, Search, Edit, Trash2, ImageIcon, Settings,
   Filter, X, ChevronDown, PencilLine, Tags, MapPin,
   Truck, AlertTriangle, CheckCircle2, XCircle, Download,
-  Copy, Archive, Loader2, Link as LinkIcon, Layers
+  Copy, Archive, Loader2, Link as LinkIcon, Layers,
+  Sparkles, BarChart3, TrendingDown, AlertCircle
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { usePermissions } from "@/hooks/use-permissions"
@@ -25,28 +25,26 @@ import { PERMISSIONS } from "@/lib/permissions"
 import AdvancedInventoryModal from "./advanced-inventory-modal"
 import BulkEditModal from "./bulk-edit-modal"
 import SmartMinStockModal from "./smart-min-stock-modal"
-import { Sparkles } from "lucide-react"
 
 const STATUS_OPTIONS = [
-  { value: "in-stock", label: "In Stock" },
-  { value: "low-stock", label: "Low Stock" },
+  { value: "in-stock",     label: "In Stock"     },
+  { value: "low-stock",    label: "Low Stock"    },
   { value: "out-of-stock", label: "Out of Stock" },
 ]
 
-// ─── Bulk Actions Definition ────────────────────────────────────────────────
 const BULK_ACTIONS = [
   {
     group: "Edit",
     actions: [
-      { id: "bulk-edit",    label: "Edit Selected",       icon: PencilLine,    variant: "default" },
-      { id: "smart-min",    label: "Smart Min Stock",     icon: Sparkles,      variant: "default" },
-      { id: "restock",       label: "Restock Selected",    icon: Truck,         variant: "success" },
+      { id: "bulk-edit", label: "Edit Selected",    icon: PencilLine, variant: "default"     },
+      { id: "smart-min", label: "Smart Min Stock",  icon: Sparkles,   variant: "default"     },
+      { id: "restock",   label: "Restock Selected", icon: Truck,      variant: "success"     },
     ],
   },
   {
     group: "Data",
     actions: [
-      { id: "export",   label: "Export to CSV",    icon: Download, variant: "default" },
+      { id: "export", label: "Export to CSV", icon: Download, variant: "default" },
     ],
   },
   {
@@ -57,7 +55,7 @@ const BULK_ACTIONS = [
   },
 ]
 
-// ─── Bulk Actions Dropdown Component ────────────────────────────────────────
+// ─── Bulk Actions Dropdown ───────────────────────────────────────────────────
 function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -71,17 +69,17 @@ function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
   }, [])
 
   const variantStyles = {
-    default:      "text-foreground hover:bg-accent hover:text-accent-foreground",
-    success:      "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40",
-    warning:      "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40",
-    destructive:  "text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40",
+    default:     "text-foreground hover:bg-accent hover:text-accent-foreground",
+    success:     "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40",
+    warning:     "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40",
+    destructive: "text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40",
   }
 
   const iconStyles = {
-    default:      "text-muted-foreground",
-    success:      "text-emerald-500",
-    warning:      "text-amber-500",
-    destructive:  "text-red-500",
+    default:     "text-muted-foreground",
+    success:     "text-emerald-500",
+    warning:     "text-amber-500",
+    destructive: "text-red-500",
   }
 
   const isLoading = !!loadingAction
@@ -94,20 +92,17 @@ function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 font-medium transition-all duration-150 border-primary/30 hover:border-primary/60 hover:bg-primary/5"
       >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Settings className="h-4 w-4" />
-        )}
+        {isLoading
+          ? <Loader2 className="h-4 w-4 animate-spin" />
+          : <Settings className="h-4 w-4" />
+        }
         <span>Actions</span>
         {count > 0 && (
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">
             {count}
           </span>
         )}
-        <ChevronDown
-          className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-        />
+        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </Button>
 
       {open && (
@@ -115,14 +110,11 @@ function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
           className="absolute left-0 top-full mt-2 z-50 min-w-[220px] rounded-xl border border-border bg-popover shadow-xl shadow-black/10 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
           style={{ transformOrigin: "top left" }}
         >
-          {/* Header */}
           <div className="px-3 py-2.5 border-b border-border bg-muted/40">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {count} item{count !== 1 ? "s" : ""} selected
             </p>
           </div>
-
-          {/* Action Groups */}
           <div className="py-1 max-h-[420px] overflow-y-auto">
             {BULK_ACTIONS.map((group, gi) => (
               <div key={group.group}>
@@ -140,11 +132,10 @@ function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
                       onClick={() => { onAction(id); setOpen(false) }}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors duration-100 disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]}`}
                     >
-                      {actionLoading ? (
-                        <Loader2 className={`h-4 w-4 flex-shrink-0 animate-spin ${iconStyles[variant]}`} />
-                      ) : (
-                        <Icon className={`h-4 w-4 flex-shrink-0 ${iconStyles[variant]}`} />
-                      )}
+                      {actionLoading
+                        ? <Loader2 className={`h-4 w-4 flex-shrink-0 animate-spin ${iconStyles[variant]}`} />
+                        : <Icon className={`h-4 w-4 flex-shrink-0 ${iconStyles[variant]}`} />
+                      }
                       <span>{actionLoading ? "Processing…" : label}</span>
                     </button>
                   )
@@ -158,84 +149,392 @@ function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
   )
 }
 
+// ─── Summary Strip ───────────────────────────────────────────────────────────
+function SummaryStrip({ rawMaterials, finishedGoods, productBundles }) {
+  const allItems = [...rawMaterials, ...finishedGoods, ...productBundles]
+  const total     = allItems.length
+  const inStock   = allItems.filter(i => i.quantity > (i.minimumStock || 0)).length
+  const lowStock  = allItems.filter(i => i.quantity > 0 && i.quantity <= (i.minimumStock || 0)).length
+  const outStock  = allItems.filter(i => i.quantity <= 0).length
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      {[
+        { label: "Total Items",   value: total,    icon: Package,       color: "text-foreground"    },
+        { label: "In Stock",      value: inStock,  icon: CheckCircle2,  color: "text-emerald-600"   },
+        { label: "Low Stock",     value: lowStock, icon: AlertCircle,   color: "text-amber-600"     },
+        { label: "Out of Stock",  value: outStock, icon: XCircle,       color: "text-red-600"       },
+      ].map(({ label, value, icon: Icon, color }) => (
+        <div key={label} className="bg-muted/40 rounded-xl border border-border/50 px-4 py-3 flex items-center gap-3">
+          <Icon className={`h-5 w-5 flex-shrink-0 ${color}`} />
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">{label}</p>
+            <p className={`text-xl font-semibold leading-tight ${color}`}>{value}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Status Badge ────────────────────────────────────────────────────────────
+function StatusBadge({ item, isBundle }) {
+  if (isBundle) return <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50 dark:bg-blue-950/30 text-[10px] uppercase font-semibold tracking-wide">Bundle</Badge>
+  if (item.quantity <= 0)                          return <Badge variant="destructive" className="text-[10px] uppercase font-semibold tracking-wide">Out of Stock</Badge>
+  if (item.quantity <= (item.minimumStock || 0))   return <Badge variant="secondary"   className="text-[10px] uppercase font-semibold tracking-wide bg-amber-100 text-amber-800 border-amber-200">Low Stock</Badge>
+  return <Badge className="text-[10px] uppercase font-semibold tracking-wide bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">In Stock</Badge>
+}
+
+// ─── Days-Left Badge ─────────────────────────────────────────────────────────
+function DaysLeftBadge({ item }) {
+  const getDaysLeft = (i) => {
+    if (!i.dailyConsumption || i.dailyConsumption <= 0) return null
+    return Math.max(0, Math.floor(i.quantity / i.dailyConsumption))
+  }
+  const daysLeft = getDaysLeft(item)
+  if (daysLeft === null || daysLeft > 3) return null
+  return (
+    <Badge
+      variant={daysLeft <= 1 ? "destructive" : "secondary"}
+      className="text-[10px] h-5 px-1.5 uppercase font-bold tracking-wider"
+    >
+      {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Ends in 1 day" : `${daysLeft}d left`}
+    </Badge>
+  )
+}
+
+// ─── Inventory Card ──────────────────────────────────────────────────────────
+function InventoryCard({
+  item, activeTab, selected, onSelect,
+  onEdit, onDelete, onAdvanced,
+  loadingEditId, loadingAdvancedId, deletingItemId,
+  suppliers, locations, can,
+}) {
+  const isBundle = activeTab === "bundles"
+  const isRM     = activeTab === "raw-materials"
+
+  const supplier = suppliers.find(s => s.id === item.supplierId)
+  const location = locations.find(l => l.id === item.locationId)
+
+  return (
+    <Card className={`transition-all duration-150 hover:shadow-sm ${selected ? "ring-2 ring-primary/40 border-primary/40" : ""}`}>
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start gap-4">
+
+          {/* Left: checkbox + optional image + body */}
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <Checkbox
+              checked={selected}
+              onCheckedChange={() => onSelect(item.id)}
+              className="mt-1 flex-shrink-0"
+            />
+
+            {/* Product image (finished goods + bundles) */}
+            {!isRM && (
+              <div className="flex-shrink-0">
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className="w-14 h-14 object-cover rounded-lg border border-border/50"
+                    onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex" }}
+                  />
+                ) : null}
+                <div className={`w-14 h-14 bg-muted rounded-lg flex items-center justify-center ${item.imageUrl ? "hidden" : "flex"}`}>
+                  <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
+              {/* Title row */}
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h3 className="font-semibold text-[15px] tracking-tight leading-snug">{item.name}</h3>
+                <StatusBadge item={item} isBundle={isBundle} />
+                <DaysLeftBadge item={item} />
+              </div>
+
+              {/* Meta row */}
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground mb-3">
+                <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground/80">{item.sku}</span>
+                {item.receivedAs && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="capitalize">Recv. as {item.receivedAs.toLowerCase()}</span>
+                  </>
+                )}
+                {(item.category || item.category?.name) && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span>{item.category?.name || item.category}</span>
+                  </>
+                )}
+                {location && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" />{location.code}</span>
+                  </>
+                )}
+                {isRM && supplier && (
+                  <>
+                    <span className="text-border">·</span>
+                    <span>{supplier.name}</span>
+                  </>
+                )}
+              </div>
+
+              {item.description && (
+                <p className="text-xs text-muted-foreground mb-3 line-clamp-1">{item.description}</p>
+              )}
+
+              {/* Stats row */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                {!isBundle && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">Inventory</span>
+                    <span className="font-semibold text-sm">
+                      {item.quantity}
+                      <span className="text-muted-foreground font-normal text-xs ml-1">{item.unit}</span>
+                    </span>
+                  </div>
+                )}
+
+                {isBundle && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">Components</span>
+                    <span className="font-semibold text-sm flex items-center gap-1">
+                      <LinkIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                      {item.items?.length || 0} items
+                    </span>
+                  </div>
+                )}
+
+                {(item.price !== undefined && !isRM) && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">
+                      {isBundle ? "Sales Price" : "Retail Price"}
+                    </span>
+                    <span className="font-semibold text-sm text-primary font-mono">
+                      Rs {Number(item.price || 0).toLocaleString("en-PK")}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">
+                    {isBundle ? "Total Cost" : "Unit Cost"}
+                  </span>
+                  <span className="font-semibold text-sm font-mono">
+                    Rs {Number(item.cost || 0).toLocaleString("en-PK")}
+                  </span>
+                </div>
+
+                {!isBundle && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">Safety Min</span>
+                    <span className="font-semibold text-sm text-muted-foreground">{item.minimumStock ?? 0}</span>
+                  </div>
+                )}
+
+                {item.targetDays && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground/60">Target</span>
+                    <span className="font-semibold text-sm text-primary/70">
+                      {item.targetDays} <span className="text-[10px] font-normal italic">days</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Bundle component pills */}
+              {isBundle && item.items?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {item.items.slice(0, 4).map(bi => (
+                    <span
+                      key={bi.id}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-[10px] text-muted-foreground border border-border/50"
+                    >
+                      {bi.quantity}× {bi.finishedGood?.sku ?? bi.finishedGoodId}
+                    </span>
+                  ))}
+                  {item.items.length > 4 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted text-[10px] text-muted-foreground border border-border/50">
+                      +{item.items.length - 4} more
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: action buttons */}
+          <div className="flex gap-1.5 flex-shrink-0 items-start">
+            {!isBundle && can(PERMISSIONS.INVENTORY_EDIT) && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loadingAdvancedId === item.id || deletingItemId === item.id}
+                onClick={() => onAdvanced(item)}
+                title="Advanced Management"
+                className="h-8 w-8 p-0"
+              >
+                {loadingAdvancedId === item.id
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Settings className="h-3.5 w-3.5" />}
+              </Button>
+            )}
+            {can(PERMISSIONS.INVENTORY_EDIT) && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loadingEditId === item.id || deletingItemId === item.id}
+                onClick={() => onEdit(item)}
+                className="h-8 w-8 p-0"
+              >
+                {loadingEditId === item.id
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Edit className="h-3.5 w-3.5" />}
+              </Button>
+            )}
+            {can(PERMISSIONS.INVENTORY_EDIT) && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={deletingItemId === item.id}
+                onClick={() => onDelete(item.id)}
+                className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 dark:hover:bg-red-950/30"
+              >
+                {deletingItemId === item.id
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Trash2 className="h-3.5 w-3.5" />}
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Select-All Bar ──────────────────────────────────────────────────────────
+function SelectBar({ total, selectedCount, selectAll, onSelectAll }) {
+  if (total === 0) return null
+  return (
+    <div className="flex items-center gap-4 mb-3 px-3 py-2.5 bg-muted/50 rounded-lg border border-border/50">
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="select-all-bar"
+          checked={selectAll}
+          onCheckedChange={onSelectAll}
+        />
+        <label htmlFor="select-all-bar" className="text-sm font-medium cursor-pointer">
+          Select all ({total})
+        </label>
+      </div>
+      {selectedCount > 0 && (
+        <Badge variant="secondary" className="ml-auto">
+          {selectedCount} selected
+        </Badge>
+      )}
+    </div>
+  )
+}
+
+// ─── Empty State ─────────────────────────────────────────────────────────────
+function EmptyState({ tab }) {
+  const messages = {
+    "finished-goods": { icon: Package,  title: "No finished goods found",   sub: "Add your first finished good or adjust your filters." },
+    "raw-materials":  { icon: Layers,   title: "No raw materials found",    sub: "Add your first raw material or adjust your filters."  },
+    "bundles":        { icon: LinkIcon, title: "No product bundles found",  sub: "Create your first bundle to group finished goods."    },
+  }
+  const { icon: Icon, title, sub } = messages[tab] || messages["finished-goods"]
+  return (
+    <div className="text-center py-16 border border-dashed rounded-xl bg-muted/20">
+      <Icon className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+      <h3 className="text-base font-semibold mb-1">{title}</h3>
+      <p className="text-sm text-muted-foreground">{sub}</p>
+    </div>
+  )
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function Inventory() {
-  const { user } = useAuth()
-  const { can } = usePermissions()
-  const [rawMaterials, setRawMaterials] = useState([])
-  const [finishedGoods, setFinishedGoods] = useState([])
-  const [suppliers, setSuppliers] = useState([])
-  const [locations, setLocations] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilters, setStatusFilters] = useState(new Set())
-  const [supplierFilter, setSupplierFilter] = useState("all")
-  const [locationFilter, setLocationFilter] = useState("all")
-  const [receivedAsFilter, setReceivedAsFilter] = useState("all")
-  const [sortBy, setSortBy] = useState("name-asc")
-  const [isReplenishing, setIsReplenishing] = useState(false)
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState(null)
-  const [activeTab, setActiveTab] = useState("finished-goods")
-  const [selectedItem, setSelectedItem] = useState(null)
-  const [isAdvancedModalOpen, setIsAdvancedModalOpen] = useState(false)
-  const [selectedItems, setSelectedItems] = useState([])
-  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false)
-  const [isSmartMinStockOpen, setIsSmartMinStockOpen] = useState(false)
-  const [selectAll, setSelectAll] = useState(false)
-
-  // ─── Loading States ───────────────────────────────────────────────────────
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [deletingItemId, setDeletingItemId] = useState(null)   // id of single item being deleted
-  const [loadingAdvancedId, setLoadingAdvancedId] = useState(null) // id of item opening advanced modal
-  const [loadingEditId, setLoadingEditId] = useState(null)     // id of item opening edit dialog
-  const [bulkLoadingAction, setBulkLoadingAction] = useState(null) // bulk action in progress
-  const [compResults, setCompResults] = useState([]) // BOM item search results
-  const [productBundles, setProductBundles] = useState([]) // New independent bundles state
-
+  const { user }  = useAuth()
+  const { can }   = usePermissions()
   const { toast } = useToast()
 
+  const [rawMaterials,   setRawMaterials]   = useState([])
+  const [finishedGoods,  setFinishedGoods]  = useState([])
+  const [productBundles, setProductBundles] = useState([])
+  const [suppliers,      setSuppliers]      = useState([])
+  const [locations,      setLocations]      = useState([])
+  const [categories,     setCategories]     = useState([])
+  const [loading,        setLoading]        = useState(true)
+
+  const [searchTerm,       setSearchTerm]       = useState("")
+  const [statusFilters,    setStatusFilters]    = useState(new Set())
+  const [supplierFilter,   setSupplierFilter]   = useState("all")
+  const [locationFilter,   setLocationFilter]   = useState("all")
+  const [receivedAsFilter, setReceivedAsFilter] = useState("all")
+  const [categoryFilter,   setCategoryFilter]   = useState("all")
+  const [sortBy,           setSortBy]           = useState("name-asc")
+
+  const [isReplenishing,     setIsReplenishing]     = useState(false)
+  const [isAddDialogOpen,    setIsAddDialogOpen]    = useState(false)
+  const [editingItem,        setEditingItem]        = useState(null)
+  const [activeTab,          setActiveTab]          = useState("finished-goods")
+  const [selectedItem,       setSelectedItem]       = useState(null)
+  const [isAdvancedModalOpen,setIsAdvancedModalOpen]= useState(false)
+  const [selectedItems,      setSelectedItems]      = useState([])
+  const [isBulkEditOpen,     setIsBulkEditOpen]     = useState(false)
+  const [isSmartMinStockOpen,setIsSmartMinStockOpen]= useState(false)
+  const [selectAll,          setSelectAll]          = useState(false)
+
+  const [isSubmitting,      setIsSubmitting]      = useState(false)
+  const [deletingItemId,    setDeletingItemId]    = useState(null)
+  const [loadingAdvancedId, setLoadingAdvancedId] = useState(null)
+  const [loadingEditId,     setLoadingEditId]     = useState(null)
+  const [bulkLoadingAction, setBulkLoadingAction] = useState(null)
+  const [compResults,       setCompResults]       = useState([])
+
+  const [formData, setFormData] = useState({
+    name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
+    minimumStock: "0", supplierId: "", locationId: "", imageUrl: "",
+    categoryId: "", receivedAs: "",
+    components: [],
+  })
+
+  // ── URL params ──────────────────────────────────────────────────────────────
   const searchParams = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "")
   const lowStockQuery = searchParams.get("lowStock")
   const outStockQuery = searchParams.get("outStock")
 
   useEffect(() => {
-    setStatusFilters((prev) => {
-      let updated = new Set(prev)
+    setStatusFilters(prev => {
+      const updated = new Set(prev)
       if (lowStockQuery === "true") updated.add("low-stock")
       if (outStockQuery === "true") updated.add("out-of-stock")
       return updated
     })
   }, [lowStockQuery, outStockQuery])
 
-  const [formData, setFormData] = useState({
-    name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
-    minimumStock: "0", supplierId: "", locationId: "", imageUrl: "", categoryId: "",
-    receivedAs: "",
-    components: [] // [{finishedGoodId, quantity}]
-  })
-
-  const [categories, setCategories] = useState([])
-const [categoryFilter, setCategoryFilter] = useState("all")
-
-  useEffect(() => { fetchData() }, [])
-
+  // ── selectAll sync ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const currentItems = 
-      activeTab === "raw-materials" ? filteredRawMaterials : 
-      activeTab === "bundles" ? filteredBundles : 
+    const currentItems =
+      activeTab === "raw-materials" ? filteredRawMaterials :
+      activeTab === "bundles"       ? filteredBundles      :
       filteredFinishedGoods
-
     if (selectAll && currentItems.length > 0) {
-      setSelectedItems(currentItems.map((item) => item.id))
+      setSelectedItems(currentItems.map(i => i.id))
     } else if (!selectAll) {
       setSelectedItems([])
     }
-  }, [selectAll, activeTab])
+  }, [selectAll, activeTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Fetch ───────────────────────────────────────────────────────────────────
   const fetchData = async () => {
     try {
-      const [rawMaterialsRes, finishedGoodsRes, suppliersRes, locationsRes, categoriesRes, bundlesRes] = await Promise.all([
+      const [rmRes, fgRes, supRes, locRes, catRes, bdlRes] = await Promise.all([
         fetch("/api/inventory/raw-materials"),
         fetch("/api/inventory/finished-goods"),
         fetch("/api/suppliers"),
@@ -243,36 +542,39 @@ const [categoryFilter, setCategoryFilter] = useState("all")
         fetch("/api/categories"),
         fetch("/api/inventory/bundles"),
       ])
-      const [rawMaterialsData, finishedGoodsData, suppliersData, locationsData, categoriesData, bundlesData] = await Promise.all([
-        rawMaterialsRes.json(), finishedGoodsRes.json(), suppliersRes.json(), locationsRes.json(), categoriesRes.json(), bundlesRes.json()
+      const [rmData, fgData, supData, locData, catData, bdlData] = await Promise.all([
+        rmRes.json(), fgRes.json(), supRes.json(), locRes.json(), catRes.json(), bdlRes.json(),
       ])
-      setRawMaterials(rawMaterialsData)
-      setFinishedGoods(finishedGoodsData)
-      setProductBundles(bundlesData)
-      setSuppliers(suppliersData)
-      setLocations(locationsData)
-      setCategories(categoriesData.data || [])
-    } catch (error) {
+      setRawMaterials(rmData)
+      setFinishedGoods(fgData)
+      setProductBundles(bdlData)
+      setSuppliers(supData)
+      setLocations(locData)
+      setCategories(catData.data || [])
+    } catch {
       toast({ title: "Error", description: "Failed to fetch inventory data", variant: "destructive" })
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => { fetchData() }, [])
+
+  // ── Form submit ─────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      const url = editingItem ? `/api/inventory/${activeTab}/${editingItem.id}` : `/api/inventory/${activeTab}`
+      const url    = editingItem ? `/api/inventory/${activeTab}/${editingItem.id}` : `/api/inventory/${activeTab}`
       const method = editingItem ? "PUT" : "POST"
-      const response = await fetch(url, {
+      const res    = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       })
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to save item")
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Failed to save item")
       }
       toast({ title: "Success", description: `Item ${editingItem ? "updated" : "created"} successfully` })
       setIsAddDialogOpen(false)
@@ -286,50 +588,62 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     }
   }
 
+  // ── Delete ──────────────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this item?")) return
     setDeletingItemId(id)
     try {
-      const response = await fetch(`/api/inventory/${activeTab}/${id}`, { method: "DELETE" })
-      if (!response.ok) throw new Error("Failed to delete item")
+      const res = await fetch(`/api/inventory/${activeTab}/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Failed to delete item")
       toast({ title: "Success", description: "Item deleted successfully" })
       fetchData()
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" })
     } finally {
       setDeletingItemId(null)
     }
   }
 
+  // ── Reset form ──────────────────────────────────────────────────────────────
   const resetForm = () => {
-    setFormData({ name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
-      minimumStock: "0", supplierId: "", locationId: "", imageUrl: "", categoryId: "",
+    setFormData({
+      name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
+      minimumStock: "0", supplierId: "", locationId: "", imageUrl: "",
+      categoryId: "",
       receivedAs: activeTab === "raw-materials" ? "RAW" : "FINISHED",
-      components: []
+      components: [],
     })
   }
 
- const openEditDialog = (item) => {
-  setLoadingEditId(item.id)
-  setEditingItem(item)
-  setFormData({
-    name: item.name || "", sku: item.sku || "", description: item.description || "",
-    unit: item.unit || "", cost: item.cost?.toString() || "", price: item.price?.toString() || "",
-    minimumStock: item.minimumStock?.toString() || "", supplierId: item.supplierId || "",
-    locationId: item.locationId || "", imageUrl: item.imageUrl || "",
-    categoryId: item.categoryId || "",
-    receivedAs: item.receivedAs || (activeTab === "raw-materials" ? "RAW" : "FINISHED"),
-    components: item.items?.map(c => ({
-      finishedGoodId: c.finishedGood.id,
-      name: c.finishedGood.name,
-      sku: c.finishedGood.sku,
-      quantity: c.quantity
-    })) || []
-  })
-  setIsAddDialogOpen(true)
-  setTimeout(() => setLoadingEditId(null), 300)
-}
+  // ── Open edit dialog ────────────────────────────────────────────────────────
+  const openEditDialog = (item) => {
+    setLoadingEditId(item.id)
+    setEditingItem(item)
+    setFormData({
+      name:         item.name         || "",
+      sku:          item.sku          || "",
+      description:  item.description  || "",
+      unit:         item.unit         || "",
+      cost:         item.cost?.toString()         || "",
+      price:        item.price?.toString()        || "",
+      minimumStock: item.minimumStock?.toString() || "",
+      supplierId:   item.supplierId   || "",
+      locationId:   item.locationId   || "",
+      imageUrl:     item.imageUrl     || "",
+      categoryId:   item.categoryId   || "",
+      receivedAs:   item.receivedAs   || (activeTab === "raw-materials" ? "RAW" : "FINISHED"),
+      components: item.items?.map(c => ({
+        finishedGoodId: c.finishedGood.id,
+        name:           c.finishedGood.name,
+        sku:            c.finishedGood.sku,
+        quantity:       c.quantity,
+      })) || [],
+    })
+    setIsAddDialogOpen(true)
+    setTimeout(() => setLoadingEditId(null), 300)
+  }
 
+  // ── Open advanced modal ─────────────────────────────────────────────────────
   const openAdvancedModal = (item) => {
     setLoadingAdvancedId(item.id)
     setSelectedItem(item)
@@ -337,147 +651,52 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     setTimeout(() => setLoadingAdvancedId(null), 300)
   }
 
-  const getStatusBadge = (item) => {
-    if (activeTab === "bundles") return <Badge variant="outline" className="border-blue-200 text-blue-600 bg-blue-50">Bundle</Badge>
-    if (item.quantity <= 0) return <Badge variant="destructive">Out of Stock</Badge>
-    if (item.quantity <= (item.minimumStock || 0)) return <Badge variant="secondary">Low Stock</Badge>
-    return <Badge variant="default">In Stock</Badge>
-  }
-
-  const getItemStatus = (item) => {
-    if (item.quantity <= 0) return "out-of-stock"
-    if (item.quantity <= item.minimumStock) return "low-stock"
-    return "in-stock"
-  }
-
-  const getDaysLeft = (item) => {
-    if (!item.dailyConsumption || item.dailyConsumption <= 0) return null
-    return Math.max(0, Math.floor(item.quantity / item.dailyConsumption))
-  }
-
-  const sortItems = (items) => {
-    return [...items].sort((a, b) => {
-      if (sortBy === "name-asc") return a.name.localeCompare(b.name)
-      if (sortBy === "name-desc") return b.name.localeCompare(a.name)
-      if (sortBy === "sku-asc") return a.sku.localeCompare(b.sku)
-      if (sortBy === "qty-asc") return a.quantity - b.quantity
-      if (sortBy === "qty-desc") return b.quantity - a.quantity
-      if (sortBy === "days-left") {
-        const aVal = a.dailyConsumption > 0 ? a.quantity / a.dailyConsumption : 999999
-        const bVal = b.dailyConsumption > 0 ? b.quantity / b.dailyConsumption : 999999
-        return aVal - bVal
-      }
-      return 0
-    })
-  }
-
-  const toggleStatusFilter = (value) => {
-    setStatusFilters((prev) => {
-      const next = new Set(prev)
-      next.has(value) ? next.delete(value) : next.add(value)
-      return next
-    })
-  }
-
-  const removeStatusFilter = (value) => {
-    setStatusFilters((prev) => { const next = new Set(prev); next.delete(value); return next })
-  }
-
-  const matchesStatusFilter = (item) => statusFilters.size === 0 || statusFilters.has(getItemStatus(item))
-
-  const filteredRawMaterials = rawMaterials.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesSupplier = supplierFilter === "all" || item.supplierId === supplierFilter
-    const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
-    const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
-    return matchesSearch && matchesStatusFilter(item) && matchesSupplier && matchesLocation && matchesReceivedAs
-  })
-  const sortedRawMaterials = sortItems(filteredRawMaterials)
-
-  const filteredFinishedGoods = finishedGoods.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
-    const matchesCategory = categoryFilter === "all" || item.categoryId === categoryFilter
-    const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
-    return matchesSearch && matchesStatusFilter(item) && matchesLocation && matchesCategory && matchesReceivedAs
-  })
-  const sortedFinishedGoods = sortItems(filteredFinishedGoods)
-
-  const filteredBundles = productBundles.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
-    return matchesSearch && matchesStatusFilter(item) && matchesReceivedAs
-  })
-  const sortedBundles = sortItems(filteredBundles)
-
+  // ── Auto replenish ──────────────────────────────────────────────────────────
   const handleAutoReplenish = async () => {
     if (!confirm("This will scan your inventory and automatically create inbound orders for items below maintenance targets. Proceed?")) return
+    setIsReplenishing(true)
     try {
-      setIsReplenishing(true)
-      const response = await fetch("/api/inventory/finished-goods/auto-replenish", {
+      const res  = await fetch("/api/inventory/finished-goods/auto-replenish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id }),
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        const hasOrders = data.orders && data.orders.length > 0
-        const poNumbers = hasOrders ? data.orders.map(o => o.poNumber).join(", ") : ""
-        
+      const data = await res.json()
+      if (res.ok) {
+        const hasOrders = data.orders?.length > 0
         toast({
-          title: hasOrders ? "Replenishment Triggered" : "Inventory Healthy",
-          description: hasOrders 
-            ? `${data.message}. Order(s): ${poNumbers}` 
-            : data.message,
+          title:       hasOrders ? "Replenishment Triggered" : "Inventory Healthy",
+          description: hasOrders ? `${data.message}. Order(s): ${data.orders.map(o => o.poNumber).join(", ")}` : data.message,
         })
-        if (hasOrders) {
-            fetchData() // Refresh list
-        }
+        if (hasOrders) fetchData()
       } else {
         throw new Error(data.error || "Failed to run replenishment")
       }
     } catch (error) {
-      toast({
-        title: "Replenishment Failed",
-        description: error.message,
-        variant: "destructive",
-      })
+      toast({ title: "Replenishment Failed", description: error.message, variant: "destructive" })
     } finally {
       setIsReplenishing(false)
     }
   }
 
-  const handleItemSelect = (itemId) => {
-    setSelectedItems((prev) => prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId])
-  }
+  // ── Item selection ──────────────────────────────────────────────────────────
+  const handleItemSelect  = (id)      => setSelectedItems(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  const handleSelectAll   = ()        => setSelectAll(!selectAll)
 
-  const handleSelectAll = () => setSelectAll(!selectAll)
-
+  // ── Export ──────────────────────────────────────────────────────────────────
   const handleExportItems = () => {
-    const currentItems = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
-    const itemsToExport = currentItems.filter((item) => selectedItems.includes(item.id))
-    const csvContent = [
-      ["Name", "SKU", "Description", "Unit", "Cost", "Price", "Quantity", "Minimum Stock", "Supplier", "Location"].join(","),
-      ...itemsToExport.map((item) => [
-        `"${item.name}"`,
-        `"${item.sku}"`,
-        `"${item.description || ""}"`,
-        `"${item.unit}"`,
-        item.cost ?? "",
-        item.price ?? "",
-        item.quantity,
-        item.minimumStock ?? "",
-        `"${suppliers.find((s) => s.id === item.supplierId)?.name || ""}"`,
-        `"${locations.find((l) => l.id === item.locationId)?.code || ""}"`,
+    const currentItems  = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
+    const itemsToExport = currentItems.filter(i => selectedItems.includes(i.id))
+    const csv = [
+      ["Name","SKU","Description","Unit","Cost (PKR)","Price (PKR)","Quantity","Minimum Stock","Supplier","Location"].join(","),
+      ...itemsToExport.map(item => [
+        `"${item.name}"`, `"${item.sku}"`, `"${item.description || ""}"`, `"${item.unit}"`,
+        item.cost ?? "", item.price ?? "", item.quantity, item.minimumStock ?? "",
+        `"${suppliers.find(s => s.id === item.supplierId)?.name || ""}"`,
+        `"${locations.find(l => l.id === item.locationId)?.code || ""}"`,
       ].join(",")),
     ].join("\n")
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
+    const url  = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }))
     const link = document.createElement("a")
     link.setAttribute("href", url)
     link.setAttribute("download", `${activeTab}-${new Date().toISOString()}.csv`)
@@ -486,39 +705,38 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     document.body.removeChild(link)
   }
 
-  // ─── Bulk Action Handler ─────────────────────────────────────────────────
+  // ── Bulk actions ────────────────────────────────────────────────────────────
   const handleBulkAction = async (actionId) => {
-    const currentItems = activeTab === "raw-materials" ? sortedRawMaterials : sortedFinishedGoods
-    const selectedItemsData = currentItems.filter((item) => selectedItems.includes(item.id))
+    const currentItems    = activeTab === "raw-materials" ? sortedRawMaterials : sortedFinishedGoods
+    const selectedItemsData = currentItems.filter(i => selectedItems.includes(i.id))
 
     switch (actionId) {
       case "bulk-edit":
-        if (selectedItemsData.length === 0) {
+        if (!selectedItemsData.length) {
           toast({ title: "No items selected", description: "Please select items to bulk edit", variant: "destructive" })
           return
         }
         setIsBulkEditOpen(true)
         break
 
-        case "restock":
-          localStorage.setItem("restockItems", JSON.stringify(selectedItemsData))
-          // send user to /inbound with restock = true param
-          toast({ title: "Restock", description: "Redirecting to inbound...", variant: "info" })
-          const query = new URLSearchParams({ restock: "true" }).toString()
-          window.location.href = `/inbound?${query}`
-          break
+      case "restock":
+        localStorage.setItem("restockItems", JSON.stringify(selectedItemsData))
+        toast({ title: "Restock", description: "Redirecting to inbound…", variant: "info" })
+        window.location.href = `/inbound?${new URLSearchParams({ restock: "true" })}`
+        break
+
       case "smart-min":
         setIsSmartMinStockOpen(true)
         break
+
       case "delete":
         if (!confirm(`Delete ${selectedItems.length} item${selectedItems.length !== 1 ? "s" : ""}? This cannot be undone.`)) return
         setBulkLoadingAction("delete")
         try {
-          const ids = selectedItemsData.map((item) => item.id)
           await fetch(`/api/inventory/${activeTab}`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids }),
+            body: JSON.stringify({ ids: selectedItemsData.map(i => i.id) }),
           })
           toast({ title: "Deleted", description: `${selectedItems.length} items deleted` })
           setSelectedItems([])
@@ -534,8 +752,7 @@ const [categoryFilter, setCategoryFilter] = useState("all")
       case "export":
         setBulkLoadingAction("export")
         try {
-          // Small async delay to let the spinner render before the synchronous CSV work
-          await new Promise((r) => setTimeout(r, 50))
+          await new Promise(r => setTimeout(r, 50))
           handleExportItems()
           toast({ title: "Exported", description: `${selectedItems.length} items exported to CSV` })
         } finally {
@@ -554,37 +771,122 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     setSelectAll(false)
   }
 
-const hasActiveFilters = statusFilters.size > 0 || supplierFilter !== "all" || locationFilter !== "all" || categoryFilter !== "all"
+  // ── Filtering helpers ───────────────────────────────────────────────────────
+  const getItemStatus = (item) => {
+    if (item.quantity <= 0)                        return "out-of-stock"
+    if (item.quantity <= item.minimumStock)        return "low-stock"
+    return "in-stock"
+  }
 
-const clearAllFilters = () => {
-  setStatusFilters(new Set())
-  setSupplierFilter("all")
-  setLocationFilter("all")
-  setCategoryFilter("all")
-  setReceivedAsFilter("all")
-}
+  const toggleStatusFilter = (value) => {
+    setStatusFilters(prev => {
+      const next = new Set(prev)
+      next.has(value) ? next.delete(value) : next.add(value)
+      return next
+    })
+  }
+
+  const removeStatusFilter = (value) => {
+    setStatusFilters(prev => { const next = new Set(prev); next.delete(value); return next })
+  }
+
+  const matchesStatusFilter = (item) => statusFilters.size === 0 || statusFilters.has(getItemStatus(item))
+
+  const hasActiveFilters = statusFilters.size > 0 || supplierFilter !== "all" || locationFilter !== "all" || categoryFilter !== "all" || receivedAsFilter !== "all"
+
+  const clearAllFilters = () => {
+    setStatusFilters(new Set())
+    setSupplierFilter("all")
+    setLocationFilter("all")
+    setCategoryFilter("all")
+    setReceivedAsFilter("all")
+  }
+
+  // ── Sort ────────────────────────────────────────────────────────────────────
+  const sortItems = (items) => [...items].sort((a, b) => {
+    if (sortBy === "name-asc")  return a.name.localeCompare(b.name)
+    if (sortBy === "name-desc") return b.name.localeCompare(a.name)
+    if (sortBy === "sku-asc")   return a.sku.localeCompare(b.sku)
+    if (sortBy === "qty-asc")   return a.quantity - b.quantity
+    if (sortBy === "qty-desc")  return b.quantity - a.quantity
+    if (sortBy === "days-left") {
+      const av = a.dailyConsumption > 0 ? a.quantity / a.dailyConsumption : 999999
+      const bv = b.dailyConsumption > 0 ? b.quantity / b.dailyConsumption : 999999
+      return av - bv
+    }
+    return 0
+  })
+
+  // ── Filtered datasets ───────────────────────────────────────────────────────
+  const filteredRawMaterials = rawMaterials.filter(item => {
+    const q = searchTerm.toLowerCase()
+    return (
+      (item.name.toLowerCase().includes(q) || item.sku.toLowerCase().includes(q)) &&
+      matchesStatusFilter(item) &&
+      (supplierFilter   === "all" || item.supplierId  === supplierFilter)  &&
+      (locationFilter   === "all" || item.locationId  === locationFilter)  &&
+      (receivedAsFilter === "all" || item.receivedAs  === receivedAsFilter)
+    )
+  })
+  const sortedRawMaterials = sortItems(filteredRawMaterials)
+
+  const filteredFinishedGoods = finishedGoods.filter(item => {
+    const q = searchTerm.toLowerCase()
+    return (
+      (item.name.toLowerCase().includes(q) || item.sku.toLowerCase().includes(q)) &&
+      matchesStatusFilter(item) &&
+      (locationFilter   === "all" || item.locationId  === locationFilter)  &&
+      (categoryFilter   === "all" || item.categoryId  === categoryFilter)  &&
+      (receivedAsFilter === "all" || item.receivedAs  === receivedAsFilter)
+    )
+  })
+  const sortedFinishedGoods = sortItems(filteredFinishedGoods)
+
+  const filteredBundles = productBundles.filter(item => {
+    const q = searchTerm.toLowerCase()
+    return (
+      (item.name.toLowerCase().includes(q) || item.sku.toLowerCase().includes(q)) &&
+      matchesStatusFilter(item) &&
+      (receivedAsFilter === "all" || item.receivedAs === receivedAsFilter)
+    )
+  })
+  const sortedBundles = sortItems(filteredBundles)
+
+  // ── currentItems for selected context ──────────────────────────────────────
+  const currentItems =
+    activeTab === "raw-materials" ? filteredRawMaterials :
+    activeTab === "bundles"       ? filteredBundles      :
+    filteredFinishedGoods
+
+  const selectedItemsData = currentItems.filter(i => selectedItems.includes(i.id))
+
+  // ── Shared card props ───────────────────────────────────────────────────────
+  const cardProps = {
+    activeTab, selectedItems, onSelect: handleItemSelect,
+    onEdit: openEditDialog, onDelete: handleDelete, onAdvanced: openAdvancedModal,
+    loadingEditId, loadingAdvancedId, deletingItemId,
+    suppliers, locations, can,
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-6 w-6 animate-spin mr-2 text-muted-foreground" />
-        <div className="text-lg text-muted-foreground">Loading inventory...</div>
+        <Loader2 className="h-5 w-5 animate-spin mr-2 text-muted-foreground" />
+        <span className="text-muted-foreground">Loading inventory…</span>
       </div>
     )
   }
 
-  const currentItems = 
-    activeTab === "raw-materials" ? filteredRawMaterials : 
-    activeTab === "bundles" ? filteredBundles :
-    filteredFinishedGoods
-  
-  const selectedItemsData = currentItems.filter((item) => selectedItems.includes(item.id))
-
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Inventory Management</h1>
-        <div className="flex flex-wrap gap-3 items-center">
+
+      {/* ── Page Header ── */}
+      <div className="flex justify-between items-start flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Inventory</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage your finished goods, raw materials and bundles</p>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
           <BulkActionsDropdown
             count={selectedItems.length}
             onAction={handleBulkAction}
@@ -594,24 +896,26 @@ const clearAllFilters = () => {
 
           {activeTab === "finished-goods" && can(PERMISSIONS.INVENTORY_EDIT) && (
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => setIsSmartMinStockOpen(true)} 
-                className="border-primary/20 hover:bg-primary/5 text-primary h-9"
+                onClick={() => setIsSmartMinStockOpen(true)}
+                className="border-violet-200 hover:bg-violet-50 text-violet-700 dark:border-violet-800 dark:hover:bg-violet-950/30 dark:text-violet-400 h-9"
               >
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Smart Min Stock
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                Smart Min Stock
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={handleAutoReplenish} 
-                disabled={isReplenishing} 
-                className="border-blue-200 hover:bg-blue-50 text-blue-600 h-9"
+                onClick={handleAutoReplenish}
+                disabled={isReplenishing}
+                className="border-blue-200 hover:bg-blue-50 text-blue-600 dark:border-blue-800 dark:hover:bg-blue-950/30 h-9"
               >
-                  {isReplenishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
-                  Smart Replenish
+                {isReplenishing
+                  ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  : <Truck className="mr-1.5 h-3.5 w-3.5" />}
+                Smart Replenish
               </Button>
             </div>
           )}
@@ -620,78 +924,82 @@ const clearAllFilters = () => {
             <DialogTrigger asChild>
               {can(PERMISSIONS.INVENTORY_EDIT) && (
                 <Button size="sm" onClick={() => { resetForm(); setEditingItem(null) }} className="h-9">
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
                   Add Item
                 </Button>
               )}
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+
+            {/* ── Add / Edit Dialog ── */}
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {editingItem ? "Edit" : "Add"} {
-                    activeTab === "raw-materials" ? "Raw Material" : 
-                    activeTab === "bundles" ? "Product Bundle" : 
-                    "Finished Good"
-                  }
+                  {editingItem ? "Edit" : "Add"}{" "}
+                  {activeTab === "raw-materials" ? "Raw Material" : activeTab === "bundles" ? "Product Bundle" : "Finished Good"}
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+
+              <form onSubmit={handleSubmit} className="space-y-4 mt-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">Name *</Label>
-                    <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                    <Input id="name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
                   </div>
                   <div>
                     <Label htmlFor="sku">SKU *</Label>
-                    <Input id="sku" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} required />
+                    <Input id="sku" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} required />
                   </div>
                 </div>
+
                 <div>
                   <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                  <Textarea id="description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="unit">Unit *</Label>
-                    <Input id="unit" value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value })} placeholder="e.g., kg, pcs, liters" required />
+                    <Input id="unit" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })} placeholder="e.g. kg, pcs, liters" required />
                   </div>
                   <div>
-                    <Label htmlFor="cost">Cost *</Label>
-                    <Input id="cost" type="number" step="0.01" value={formData.cost} onChange={(e) => setFormData({ ...formData, cost: e.target.value })} required />
+                    <Label htmlFor="cost">Cost (PKR) *</Label>
+                    <Input id="cost" type="number" step="0.01" value={formData.cost} onChange={e => setFormData({ ...formData, cost: e.target.value })} required />
                   </div>
                 </div>
+
                 {(activeTab === "finished-goods" || activeTab === "bundles") && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="price">Price *</Label>
-                      <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required />
+                      <Label htmlFor="price">Price (PKR) *</Label>
+                      <Input id="price" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
                     </div>
                     <div>
-                      <Label htmlFor="imageUrl">Image URL (Optional)</Label>
-                      <Input id="imageUrl" type="url" value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="https://example.com/image.jpg" />
+                      <Label htmlFor="imageUrl">Image URL (optional)</Label>
+                      <Input id="imageUrl" type="url" value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="https://…" />
                     </div>
                   </div>
                 )}
+
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="minimumStock">Minimum Stock</Label>
-                    <Input id="minimumStock" type="number" value={formData.minimumStock} onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value })} />
+                    <Input id="minimumStock" type="number" value={formData.minimumStock} onChange={e => setFormData({ ...formData, minimumStock: e.target.value })} />
                   </div>
                   <div>
                     <Label htmlFor="locationId">Location *</Label>
-                    <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })}>
+                    <Select value={formData.locationId} onValueChange={v => setFormData({ ...formData, locationId: v })}>
                       <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
                       <SelectContent>
-                        {locations.map((location) => (
-                          <SelectItem key={location.id} value={location.id}>{location.code} - {location.zone}</SelectItem>
+                        {locations.map(loc => (
+                          <SelectItem key={loc.id} value={loc.id}>{loc.code} – {loc.zone}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label htmlFor="receivedAs">Receive As *</Label>
-                    <Select value={formData.receivedAs} onValueChange={(value) => setFormData({ ...formData, receivedAs: value })}>
-                      <SelectTrigger><SelectValue placeholder="Replenish as..." /></SelectTrigger>
+                    <Select value={formData.receivedAs} onValueChange={v => setFormData({ ...formData, receivedAs: v })}>
+                      <SelectTrigger><SelectValue placeholder="Replenish as…" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="FINISHED">Finished Good</SelectItem>
                         <SelectItem value="RAW">Raw Material</SelectItem>
@@ -700,131 +1008,119 @@ const clearAllFilters = () => {
                   </div>
                 </div>
 
-{activeTab === "bundles" && (
-  <div className="space-y-4 pt-2 border-t mt-4">
-    <div className="space-y-0.5">
-      <Label className="text-base font-semibold">Bundle Composition (BOM)</Label>
-      <p className="text-xs text-muted-foreground">Select the finished goods that make up this bundle</p>
-    </div>
+                {/* Bundle BOM section */}
+                {activeTab === "bundles" && (
+                  <div className="space-y-4 pt-2 border-t mt-4">
+                    <div>
+                      <Label className="text-base font-semibold">Bundle Composition (BOM)</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">Select the finished goods that make up this bundle</p>
+                    </div>
+                    <div className="space-y-3 bg-muted/40 p-4 rounded-lg border border-dashed">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search items to add to bundle…"
+                          className="pl-9 h-9"
+                          onChange={e => {
+                            const term = e.target.value.toLowerCase()
+                            if (term.length < 2) { setCompResults([]); return }
+                            setCompResults(
+                              finishedGoods
+                                .filter(i =>
+                                  (i.name.toLowerCase().includes(term) || i.sku.toLowerCase().includes(term)) &&
+                                  !formData.components.some(c => c.finishedGoodId === i.id)
+                                )
+                                .slice(0, 5)
+                            )
+                          }}
+                        />
+                        {compResults.length > 0 && (
+                          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg overflow-hidden">
+                            {compResults.map(item => (
+                              <button
+                                key={item.id}
+                                type="button"
+                                className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent text-left"
+                                onClick={() => {
+                                  setFormData({ ...formData, components: [...formData.components, { finishedGoodId: item.id, name: item.name, sku: item.sku, quantity: 1 }] })
+                                  setCompResults([])
+                                }}
+                              >
+                                <div>
+                                  <p className="font-medium">{item.name}</p>
+                                  <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
+                                </div>
+                                <Plus className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
 
-    <div className="space-y-3 bg-muted/40 p-4 rounded-lg border border-dashed">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Search items to add to bundle..." 
-          className="pl-9 h-9"
-          onChange={(e) => {
-            const term = e.target.value.toLowerCase()
-            if (term.length < 2) { setCompResults([]); return }
-            const results = finishedGoods.filter(i => 
-              (i.name.toLowerCase().includes(term) || i.sku.toLowerCase().includes(term)) &&
-              !formData.components.some(c => c.finishedGoodId === i.id)
-            ).slice(0, 5)
-            setCompResults(results)
-          }}
-        />
-        {compResults.length > 0 && (
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg overflow-hidden">
-            {compResults.map(item => (
-              <button
-                key={item.id}
-                type="button"
-                className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent text-left"
-                onClick={() => {
-                  setFormData({
-                    ...formData,
-                    components: [...formData.components, { finishedGoodId: item.id, name: item.name, sku: item.sku, quantity: 1 }]
-                  })
-                  setCompResults([])
-                }}
-              >
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
-                </div>
-                <Plus className="h-4 w-4 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                        {formData.components.length === 0 ? (
+                          <p className="text-center text-xs text-muted-foreground py-4 italic">No items added yet</p>
+                        ) : (
+                          formData.components.map((comp, idx) => (
+                            <div key={comp.finishedGoodId} className="flex items-center gap-3 bg-background p-2 rounded-md border text-sm">
+                              <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{comp.name}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono truncate">{comp.sku}</p>
+                              </div>
+                              <div className="w-20">
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={comp.quantity}
+                                  onChange={e => {
+                                    const newComps = [...formData.components]
+                                    newComps[idx].quantity = parseInt(e.target.value) || 1
+                                    setFormData({ ...formData, components: newComps })
+                                  }}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => setFormData({ ...formData, components: formData.components.filter((_, i) => i !== idx) })}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-        {formData.components.length === 0 ? (
-          <p className="text-center text-xs text-muted-foreground py-4 italic">No items added yet</p>
-        ) : (
-          formData.components.map((comp, idx) => (
-            <div key={comp.finishedGoodId} className="flex items-center gap-3 bg-background p-2 rounded-md border text-sm">
-              <Layers className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{comp.name}</p>
-                <p className="text-[10px] text-muted-foreground font-mono truncate">{comp.sku}</p>
-              </div>
-              <div className="w-20">
-                <Input 
-                  type="number" 
-                  min={1} 
-                  value={comp.quantity} 
-                  onChange={(e) => {
-                    const newComps = [...formData.components]
-                    newComps[idx].quantity = parseInt(e.target.value) || 1
-                    setFormData({ ...formData, components: newComps })
-                  }}
-                  className="h-8 text-xs"
-                />
-              </div>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                onClick={() => {
-                  setFormData({
-                    ...formData,
-                    components: formData.components.filter((_, i) => i !== idx)
-                  })
-                }}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  </div>
-)}
                 {activeTab === "raw-materials" && (
                   <div>
                     <Label htmlFor="supplierId">Supplier *</Label>
-                    <Select value={formData.supplierId} onValueChange={(value) => setFormData({ ...formData, supplierId: value })}>
+                    <Select value={formData.supplierId} onValueChange={v => setFormData({ ...formData, supplierId: v })}>
                       <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
                       <SelectContent>
-                        {suppliers.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
+                        {suppliers.map(s => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isSubmitting}
-                    onClick={() => setIsAddDialogOpen(false)}
-                  >
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {editingItem ? "Updating…" : "Creating…"}
-                      </>
-                    ) : (
-                      editingItem ? "Update" : "Create"
-                    )}
+                    {isSubmitting
+                      ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{editingItem ? "Updating…" : "Creating…"}</>
+                      : editingItem ? "Update" : "Create"
+                    }
                   </Button>
                 </div>
               </form>
@@ -833,138 +1129,154 @@ const clearAllFilters = () => {
         </div>
       </div>
 
-      {/* ── Filters ── */}
-      <div className="space-y-4">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name or SKU..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-          </div>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-              <SelectItem value="sku-asc">SKU (A-Z)</SelectItem>
-              <SelectItem value="qty-asc">Quantity (Low to High)</SelectItem>
-              <SelectItem value="qty-desc">Quantity (High to Low)</SelectItem>
-              <SelectItem value="days-left">Days Ending In</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* ── Summary Strip ── */}
+      <SummaryStrip
+        rawMaterials={rawMaterials}
+        finishedGoods={finishedGoods}
+        productBundles={productBundles}
+      />
 
-        <div className="flex flex-wrap gap-4 items-start">
-          <div className="flex items-center gap-2 mt-1">
-            <Filter className="h-4 w-4" />
-            <span className="text-sm font-medium">Filters:</span>
+      {/* ── Search & Sort ── */}
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or SKU…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name-asc">Name (A–Z)</SelectItem>
+            <SelectItem value="name-desc">Name (Z–A)</SelectItem>
+            <SelectItem value="sku-asc">SKU (A–Z)</SelectItem>
+            <SelectItem value="qty-asc">Quantity: low → high</SelectItem>
+            <SelectItem value="qty-desc">Quantity: high → low</SelectItem>
+            <SelectItem value="days-left">Days ending in</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* ── Filter Row ── */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <Filter className="h-3.5 w-3.5" />
+            <span>Filters:</span>
           </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap gap-1">
-              {STATUS_OPTIONS.map(({ value, label }) => {
-                const active = statusFilters.has(value)
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => toggleStatusFilter(value)}
-                    className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium border transition-colors
-                      ${active ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-input hover:bg-muted"}`}
-                  >
-                    {active && <span className="mr-1">✓</span>}
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
+
+          {/* Status chips */}
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_OPTIONS.map(({ value, label }) => {
+              const active = statusFilters.has(value)
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => toggleStatusFilter(value)}
+                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-muted-foreground border-input hover:bg-muted"
+                  }`}
+                >
+                  {active && <span>✓</span>}
+                  {label}
+                </button>
+              )
+            })}
           </div>
+
           {activeTab === "raw-materials" && (
             <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="Supplier" /></SelectTrigger>
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Supplier" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Suppliers</SelectItem>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
-                ))}
+                {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
           )}
+
           <Select value={locationFilter} onValueChange={setLocationFilter}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Location" /></SelectTrigger>
+            <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Location" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Locations</SelectItem>
-              {locations.map((location) => (
-                <SelectItem key={location.id} value={location.id}>{location.code} - {location.zone}</SelectItem>
-              ))}
+              {locations.map(l => <SelectItem key={l.id} value={l.id}>{l.code} – {l.zone}</SelectItem>)}
             </SelectContent>
           </Select>
+
           {activeTab === "finished-goods" && (
-  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-    <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
-    <SelectContent>
-      <SelectItem value="all">All Categories</SelectItem>
-      {categories.map((cat) => (
-        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-)}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+
           <Select value={receivedAsFilter} onValueChange={setReceivedAsFilter}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Receive As" /></SelectTrigger>
+            <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="Receive As" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Any Receive As</SelectItem>
               <SelectItem value="FINISHED">Finished Good</SelectItem>
               <SelectItem value="RAW">Raw Material</SelectItem>
             </SelectContent>
           </Select>
+
           {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearAllFilters}>Clear Filters</Button>
+            <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-8 text-xs text-muted-foreground">
+              <X className="h-3 w-3 mr-1" />
+              Clear all
+            </Button>
           )}
         </div>
 
+        {/* Active filter tags */}
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2">
-            {Array.from(statusFilters).map((status) => {
-              const label = STATUS_OPTIONS.find((o) => o.value === status)?.label
-              return (
-                <Badge key={status} variant="secondary" className="flex items-center gap-1 pr-1">
-                  {label}
-                  <button type="button" onClick={() => removeStatusFilter(status)} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )
-            })}
+            {Array.from(statusFilters).map(status => (
+              <Badge key={status} variant="secondary" className="flex items-center gap-1 pr-1 text-xs">
+                {STATUS_OPTIONS.find(o => o.value === status)?.label}
+                <button type="button" onClick={() => removeStatusFilter(status)} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </Badge>
+            ))}
             {supplierFilter !== "all" && (
-              <Badge variant="secondary" className="flex items-center gap-1 pr-1">
-                {suppliers.find((s) => s.id === supplierFilter)?.name}
+              <Badge variant="secondary" className="flex items-center gap-1 pr-1 text-xs">
+                {suppliers.find(s => s.id === supplierFilter)?.name}
                 <button type="button" onClick={() => setSupplierFilter("all")} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                  <X className="h-3 w-3" />
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </Badge>
             )}
             {locationFilter !== "all" && (
-              <Badge variant="secondary" className="flex items-center gap-1 pr-1">
-                {locations.find((l) => l.id === locationFilter)?.code}
+              <Badge variant="secondary" className="flex items-center gap-1 pr-1 text-xs">
+                {locations.find(l => l.id === locationFilter)?.code}
                 <button type="button" onClick={() => setLocationFilter("all")} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                  <X className="h-3 w-3" />
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </Badge>
             )}
             {categoryFilter !== "all" && (
-  <Badge variant="secondary" className="flex items-center gap-1 pr-1">
-    {categories.find((c) => c.id === categoryFilter)?.name}
-    <button type="button" onClick={() => setCategoryFilter("all")} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
-      <X className="h-3 w-3" />
-    </button>
-  </Badge>
-)}
+              <Badge variant="secondary" className="flex items-center gap-1 pr-1 text-xs">
+                {categories.find(c => c.id === categoryFilter)?.name}
+                <button type="button" onClick={() => setCategoryFilter("all")} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </Badge>
+            )}
             {receivedAsFilter !== "all" && (
-              <Badge variant="secondary" className="flex items-center gap-1 pr-1">
-                Received as: {receivedAsFilter}
+              <Badge variant="secondary" className="flex items-center gap-1 pr-1 text-xs">
+                Recv. as: {receivedAsFilter}
                 <button type="button" onClick={() => setReceivedAsFilter("all")} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
-                  <X className="h-3 w-3" />
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </Badge>
             )}
@@ -975,315 +1287,96 @@ const clearAllFilters = () => {
       {/* ── Tabs ── */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="mb-4">
-          <TabsTrigger value="finished-goods">Finished Goods</TabsTrigger>
-          {/* <TabsTrigger value="raw-materials">Raw Materials</TabsTrigger> */}
-          <TabsTrigger value="bundles">Product Bundles</TabsTrigger>
+          <TabsTrigger value="finished-goods">
+            Finished Goods
+            <span className="ml-1.5 text-[10px] font-semibold opacity-60">({filteredFinishedGoods.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="bundles">
+            Product Bundles
+            <span className="ml-1.5 text-[10px] font-semibold opacity-60">({filteredBundles.length})</span>
+          </TabsTrigger>
+          {/* Raw Materials tab hidden by default, uncomment to show:
+          <TabsTrigger value="raw-materials">
+            Raw Materials
+            <span className="ml-1.5 text-[10px] font-semibold opacity-60">({filteredRawMaterials.length})</span>
+          </TabsTrigger>
+          */}
         </TabsList>
 
-        {/* Raw Materials */}
+        {/* ── Raw Materials ── */}
         <TabsContent value="raw-materials">
-          {filteredRawMaterials.length > 0 && (
-            <div className="flex items-center gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="select-all" checked={selectAll} onCheckedChange={handleSelectAll} />
-                <label htmlFor="select-all" className="text-sm font-medium">
-                  Select All ({filteredRawMaterials.length})
-                </label>
+          <SelectBar
+            total={filteredRawMaterials.length}
+            selectedCount={selectedItems.length}
+            selectAll={selectAll}
+            onSelectAll={handleSelectAll}
+          />
+          {sortedRawMaterials.length === 0
+            ? <EmptyState tab="raw-materials" />
+            : (
+              <div className="grid gap-3">
+                {sortedRawMaterials.map(item => (
+                  <InventoryCard
+                    key={item.id}
+                    item={item}
+                    selected={selectedItems.includes(item.id)}
+                    {...cardProps}
+                  />
+                ))}
               </div>
-              {selectedItems.length > 0 && <Badge variant="secondary">{selectedItems.length} selected</Badge>}
-            </div>
-          )}
-          <div className="grid gap-4">
-            {sortedRawMaterials.map((item) => {
-              const daysLeft = getDaysLeft(item)
-              return (
-              <Card key={item.id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-start gap-3 flex-1">
-                      <Checkbox checked={selectedItems.includes(item.id)} onCheckedChange={() => handleItemSelect(item.id)} className="mt-1" />
-                      <div className="flex-1">
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-bold text-base tracking-tight">{item.name}</h3>
-                            {getStatusBadge(item)}
-                            {daysLeft !== null && daysLeft <= 3 && (
-                                <Badge variant={daysLeft <= 1 ? "destructive" : "secondary"} className="text-[10px] h-5 px-1.5 uppercase font-bold tracking-wider">
-                                  {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Ending in 1 day" : `${daysLeft}d left`}
-                                </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium">
-                            <span className="font-mono bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground/80">{item.sku}</span>
-                            <span>•</span>
-                            <span className="capitalize">Received as {item.receivedAs.toLowerCase()}</span>
-                            {item.location && (
-                                <>
-                                <span>•</span>
-                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.location.code}</span>
-                                </>
-                            )}
-                          </div>
-                        </div>
-
-                        {item.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-1">{item.description}</p>}
-
-                        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Inventory</span>
-                            <span className="font-semibold text-sm">{item.quantity} <span className="text-muted-foreground font-normal">{item.unit}</span></span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Unit Cost</span>
-                            <span className="font-semibold text-sm">${item.cost || 0}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Safety Min</span>
-                            <span className="font-semibold text-sm text-muted-foreground/80">{item.minimumStock}</span>
-                          </div>
-                          {item.targetDays && (
-                            <div className="flex flex-col">
-                              <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Target</span>
-                              <span className="font-semibold text-sm text-primary/70">{item.targetDays} <span className="text-[10px] font-normal italic">days</span></span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {can(PERMISSIONS.INVENTORY_EDIT) && (
-                      <Button size="sm" variant="outline" disabled={loadingAdvancedId === item.id || deletingItemId === item.id} onClick={() => openAdvancedModal(item)} title="Advanced Management">
-                        {loadingAdvancedId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
-                      </Button>
-                      )}
-                      {can(PERMISSIONS.INVENTORY_EDIT) && (
-                        <Button size="sm" variant="outline" disabled={loadingEditId === item.id || deletingItemId === item.id} onClick={() => openEditDialog(item)}>
-                          {loadingEditId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
-                        </Button>
-                      )}
-                      {can(PERMISSIONS.INVENTORY_EDIT) && (
-                        <Button size="sm" variant="outline" disabled={deletingItemId === item.id} onClick={() => handleDelete(item.id)}>
-                          {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-          </div>
-        </TabsContent>
-
-        {/* Finished Goods */}
-        <TabsContent value="finished-goods">
-          {filteredFinishedGoods.length > 0 && (
-            <div className="flex items-center gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="select-all-fg" checked={selectAll} onCheckedChange={handleSelectAll} />
-                <label htmlFor="select-all-fg" className="text-sm font-medium">
-                  Select All ({filteredFinishedGoods.length})
-                </label>
-              </div>
-              {selectedItems.length > 0 && <Badge variant="secondary">{selectedItems.length} selected</Badge>}
-            </div>
-          )}
-          <div className="grid gap-4">
-            {sortedFinishedGoods.map((item) => {
-              const daysLeft = getDaysLeft(item)
-              return (
-              <Card key={item.id}>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex gap-4 flex-1">
-                      <Checkbox checked={selectedItems.includes(item.id)} onCheckedChange={() => handleItemSelect(item.id)} className="mt-1" />
-                      <div className="flex-shrink-0">
-                        {item.imageUrl ? (
-                          <img src={item.imageUrl || "/placeholder.svg"} alt={item.name} className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex" }} />
-                        ) : null}
-                        <div className={`w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center ${item.imageUrl ? "hidden" : "flex"}`}>
-                          <ImageIcon className="h-6 w-6 text-gray-400" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-bold text-base tracking-tight">{item.name}</h3>
-                            {getStatusBadge(item)}
-                            {daysLeft !== null && daysLeft <= 3 && (
-                                <Badge variant={daysLeft <= 1 ? "destructive" : "secondary"} className="text-[10px] h-5 px-1.5 uppercase font-bold tracking-wider">
-                                  {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Ending in 1 day" : `${daysLeft}d left`}
-                                </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium">
-                            <span className="font-mono bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground/80">{item.sku}</span>
-                            <span>•</span>
-                            <span className="capitalize">Received as {item.receivedAs.toLowerCase()}</span>
-                            {item.category && (
-                                <>
-                                <span>•</span>
-                                <span>{item.category.name}</span>
-                                </>
-                            )}
-                            {item.location && (
-                                <>
-                                <span>•</span>
-                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.location.code}</span>
-                                </>
-                            )}
-                          </div>
-                        </div>
-
-                        {item.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-1">{item.description}</p>}
-
-                        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Inventory</span>
-                            <span className="font-semibold text-sm">{item.quantity} <span className="text-muted-foreground font-normal">{item.unit}</span></span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Retail Price</span>
-                            <span className="font-semibold text-sm font-mono text-primary">${item.price || 0}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Safety Min</span>
-                            <span className="font-semibold text-sm text-muted-foreground/80">{item.minimumStock}</span>
-                          </div>
-                          {item.targetDays && (
-                            <div className="flex flex-col">
-                              <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Target</span>
-                              <span className="font-semibold text-sm text-primary/70">{item.targetDays} <span className="text-[10px] font-normal italic">days</span></span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" disabled={loadingAdvancedId === item.id || deletingItemId === item.id} onClick={() => openAdvancedModal(item)} title="Advanced Management">
-                        {loadingAdvancedId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Settings className="h-4 w-4" />}
-                      </Button>
-                      {can(PERMISSIONS.INVENTORY_EDIT) && (
-                        <Button size="sm" variant="outline" disabled={loadingEditId === item.id || deletingItemId === item.id} onClick={() => openEditDialog(item)}>
-                          {loadingEditId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
-                        </Button>
-                      )}
-                      {can(PERMISSIONS.INVENTORY_EDIT) && (
-                        <Button size="sm" variant="outline" disabled={deletingItemId === item.id} onClick={() => handleDelete(item.id)}>
-                          {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-          </div>
-        </TabsContent>
-
-        {/* Product Bundles */}
-        <TabsContent value="bundles">
-          {filteredBundles.length > 0 && (
-            <div className="flex items-center gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="select-all-bundles" checked={selectAll} onCheckedChange={handleSelectAll} />
-                <label htmlFor="select-all-bundles" className="text-sm font-medium">
-                  Select All ({filteredBundles.length})
-                </label>
-              </div>
-              {selectedItems.length > 0 && <Badge variant="secondary">{selectedItems.length} selected</Badge>}
-            </div>
-          )}
-          <div className="grid gap-4">
-            {sortedBundles.length === 0 ? (
-              <div className="text-center py-12 border rounded-xl bg-muted/20">
-                <Layers className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-lg font-medium">No bundles found</h3>
-                <p className="text-muted-foreground">Create your first bundle to get started</p>
-              </div>
-            ) : (
-              sortedBundles.map((item) => (
-                <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex gap-4 flex-1">
-                        <Checkbox checked={selectedItems.includes(item.id)} onCheckedChange={() => handleItemSelect(item.id)} className="mt-1" />
-                        <div className="flex-1">
-                          <div className="mb-3">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-bold text-base tracking-tight">{item.name}</h3>
-                              <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">BUNDLE</Badge>
-                              {getStatusBadge(item)}
-                            </div>
-                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium">
-                              <span className="font-mono bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground/80">{item.sku}</span>
-                              <span>•</span>
-                              <span className="capitalize text-blue-600/80">Received as {item.receivedAs.toLowerCase()}</span>
-                              {item.location && (
-                                  <>
-                                  <span>•</span>
-                                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.location.code}</span>
-                                  </>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-1">{item.description || "No description provided."}</p>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Components</p>
-                              <p className="font-semibold flex items-center gap-1.5">
-                                <LinkIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                                {item.items?.length || 0} items
-                              </p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Sales Price</p>
-                              <p className="font-semibold text-emerald-600">PKR {item.price?.toLocaleString() || 0}</p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Cost</p>
-                              <p className="font-semibold">PKR {item.cost?.toLocaleString() || 0}</p>
-                            </div>
-                          </div>
-                          
-                          {item.items?.length > 0 && (
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              {item.items.slice(0, 3).map(bi => (
-                                <Badge key={bi.id} variant="secondary" className="bg-muted/50 text-[10px] font-normal">
-                                  {bi.quantity}x {bi.finishedGood.sku}
-                                </Badge>
-                              ))}
-                              {item.items.length > 3 && (
-                                <Badge variant="secondary" className="bg-muted/50 text-[10px] font-normal">
-                                  +{item.items.length - 3} more
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {can(PERMISSIONS.INVENTORY_EDIT) && (
-                          <Button size="sm" variant="outline" disabled={loadingEditId === item.id || deletingItemId === item.id} onClick={() => openEditDialog(item)}>
-                            {loadingEditId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4 text-muted-foreground" />}
-                          </Button>
-                        )}
-                        {can(PERMISSIONS.INVENTORY_EDIT) && (
-                          <Button size="sm" variant="outline" className="text-red-500 hover:text-red-600 hover:bg-red-50" disabled={deletingItemId === item.id} onClick={() => handleDelete(item.id)}>
-                            {deletingItemId === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
             )}
-          </div>
+        </TabsContent>
+
+        {/* ── Finished Goods ── */}
+        <TabsContent value="finished-goods">
+          <SelectBar
+            total={filteredFinishedGoods.length}
+            selectedCount={selectedItems.length}
+            selectAll={selectAll}
+            onSelectAll={handleSelectAll}
+          />
+          {sortedFinishedGoods.length === 0
+            ? <EmptyState tab="finished-goods" />
+            : (
+              <div className="grid gap-3">
+                {sortedFinishedGoods.map(item => (
+                  <InventoryCard
+                    key={item.id}
+                    item={item}
+                    selected={selectedItems.includes(item.id)}
+                    {...cardProps}
+                  />
+                ))}
+              </div>
+            )}
+        </TabsContent>
+
+        {/* ── Product Bundles ── */}
+        <TabsContent value="bundles">
+          <SelectBar
+            total={filteredBundles.length}
+            selectedCount={selectedItems.length}
+            selectAll={selectAll}
+            onSelectAll={handleSelectAll}
+          />
+          {sortedBundles.length === 0
+            ? <EmptyState tab="bundles" />
+            : (
+              <div className="grid gap-3">
+                {sortedBundles.map(item => (
+                  <InventoryCard
+                    key={item.id}
+                    item={item}
+                    selected={selectedItems.includes(item.id)}
+                    {...cardProps}
+                  />
+                ))}
+              </div>
+            )}
         </TabsContent>
       </Tabs>
 
+      {/* ── Modals ── */}
       <AdvancedInventoryModal
         item={selectedItem}
         isOpen={isAdvancedModalOpen}
@@ -1303,7 +1396,7 @@ const clearAllFilters = () => {
         categories={categories}
       />
 
-      <SmartMinStockModal 
+      <SmartMinStockModal
         isOpen={isSmartMinStockOpen}
         onClose={() => setIsSmartMinStockOpen(false)}
         selectedIds={selectedItems.length > 0 ? selectedItems : []}
