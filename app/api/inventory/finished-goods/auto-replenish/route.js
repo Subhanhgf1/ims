@@ -5,7 +5,15 @@ import { addDays, startOfDay } from "date-fns"
 
 export const dynamic = "force-dynamic"
 
+export async function GET(request) {
+  return handleReplenish(request);
+}
+
 export async function POST(request) {
+  return handleReplenish(request);
+}
+
+async function handleReplenish(request) {
   try {
     const authHeader = request.headers.get("authorization");
     const isCronTrigger = authHeader === `Bearer ${process.env.CRON_SECRET}`;
