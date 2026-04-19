@@ -943,28 +943,49 @@ const clearAllFilters = () => {
                     <div className="flex items-start gap-3 flex-1">
                       <Checkbox checked={selectedItems.includes(item.id)} onCheckedChange={() => handleItemSelect(item.id)} className="mt-1" />
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Package className="h-4 w-4" />
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <Badge variant="outline">{item.sku}</Badge>
-                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                            Receive as: {item.receivedAs}
-                          </Badge>
-                          {getStatusBadge(item)}
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-base tracking-tight">{item.name}</h3>
+                            {getStatusBadge(item)}
+                            {daysLeft !== null && daysLeft <= 3 && (
+                                <Badge variant={daysLeft <= 1 ? "destructive" : "secondary"} className="text-[10px] h-5 px-1.5 uppercase font-bold tracking-wider">
+                                  {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Ending in 1 day" : `${daysLeft}d left`}
+                                </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium">
+                            <span className="font-mono bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground/80">{item.sku}</span>
+                            <span>•</span>
+                            <span className="capitalize">Received as {item.receivedAs.toLowerCase()}</span>
+                            {item.location && (
+                                <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.location.code}</span>
+                                </>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div><span className="font-medium">Quantity:</span> {item.quantity} {item.unit}</div>
-                          <div><span className="font-medium">Min Stock:</span> {item.minimumStock}</div>
+
+                        {item.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-1">{item.description}</p>}
+
+                        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Inventory</span>
+                            <span className="font-semibold text-sm">{item.quantity} <span className="text-muted-foreground font-normal">{item.unit}</span></span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Unit Cost</span>
+                            <span className="font-semibold text-sm">${item.cost || 0}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Safety Min</span>
+                            <span className="font-semibold text-sm text-muted-foreground/80">{item.minimumStock}</span>
+                          </div>
                           {item.targetDays && (
-                            <div className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded w-fit">
-                              Maintained for {item.targetDays} days
+                            <div className="flex flex-col">
+                              <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Target</span>
+                              <span className="font-semibold text-sm text-primary/70">{item.targetDays} <span className="text-[10px] font-normal italic">days</span></span>
                             </div>
-                          )}
-                          {daysLeft !== null && (
-                            <Badge variant={daysLeft <= 1 ? "destructive" : daysLeft <= 3 ? "secondary" : "outline"} className="mt-1">
-                              {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Stock ending in 1 day" : `${daysLeft} days stock left`}
-                            </Badge>
                           )}
                         </div>
                       </div>
@@ -1025,29 +1046,55 @@ const clearAllFilters = () => {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Package className="h-4 w-4" />
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <Badge variant="outline">{item.sku}</Badge>
-                          {item.category && <Badge variant="secondary" className="text-xs">{item.category.name}</Badge>}
-                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                            Receive as: {item.receivedAs}
-                          </Badge>
-                          {getStatusBadge(item)}
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-base tracking-tight">{item.name}</h3>
+                            {getStatusBadge(item)}
+                            {daysLeft !== null && daysLeft <= 3 && (
+                                <Badge variant={daysLeft <= 1 ? "destructive" : "secondary"} className="text-[10px] h-5 px-1.5 uppercase font-bold tracking-wider">
+                                  {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Ending in 1 day" : `${daysLeft}d left`}
+                                </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium">
+                            <span className="font-mono bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground/80">{item.sku}</span>
+                            <span>•</span>
+                            <span className="capitalize">Received as {item.receivedAs.toLowerCase()}</span>
+                            {item.category && (
+                                <>
+                                <span>•</span>
+                                <span>{item.category.name}</span>
+                                </>
+                            )}
+                            {item.location && (
+                                <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.location.code}</span>
+                                </>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                          <div><span className="font-medium">Quantity:</span> {item.quantity} {item.unit}</div>
-                          <div><span className="font-medium">Price:</span> {item.price}</div>
+
+                        {item.description && <p className="text-sm text-muted-foreground mb-4 line-clamp-1">{item.description}</p>}
+
+                        <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Inventory</span>
+                            <span className="font-semibold text-sm">{item.quantity} <span className="text-muted-foreground font-normal">{item.unit}</span></span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Retail Price</span>
+                            <span className="font-semibold text-sm font-mono text-primary">${item.price || 0}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Safety Min</span>
+                            <span className="font-semibold text-sm text-muted-foreground/80">{item.minimumStock}</span>
+                          </div>
                           {item.targetDays && (
-                            <div className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded w-fit">
-                              Maintained for {item.targetDays} days
+                            <div className="flex flex-col">
+                              <span className="text-[9px] uppercase text-muted-foreground/70 font-bold tracking-widest mb-0.5">Target</span>
+                              <span className="font-semibold text-sm text-primary/70">{item.targetDays} <span className="text-[10px] font-normal italic">days</span></span>
                             </div>
-                          )}
-                          {daysLeft !== null && (
-                            <Badge variant={daysLeft <= 1 ? "destructive" : daysLeft <= 3 ? "secondary" : "outline"} className="mt-1">
-                              {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Stock ending in 1 day" : `${daysLeft} days stock left`}
-                            </Badge>
                           )}
                         </div>
                       </div>
@@ -1103,16 +1150,25 @@ const clearAllFilters = () => {
                       <div className="flex gap-4 flex-1">
                         <Checkbox checked={selectedItems.includes(item.id)} onCheckedChange={() => handleItemSelect(item.id)} className="mt-1" />
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Layers className="h-4 w-4 text-blue-500" />
-                            <h3 className="font-semibold">{item.name}</h3>
-                            <Badge variant="outline" className="font-mono">{item.sku}</Badge>
-                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                              Receive as: {item.receivedAs}
-                            </Badge>
-                            {getStatusBadge(item)}
+                          <div className="mb-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-bold text-base tracking-tight">{item.name}</h3>
+                              <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">BUNDLE</Badge>
+                              {getStatusBadge(item)}
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-medium">
+                              <span className="font-mono bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground/80">{item.sku}</span>
+                              <span>•</span>
+                              <span className="capitalize text-blue-600/80">Received as {item.receivedAs.toLowerCase()}</span>
+                              {item.location && (
+                                  <>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.location.code}</span>
+                                  </>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-3">{item.description || "No description provided."}</p>
+                          <p className="text-sm text-muted-foreground mb-4 line-clamp-1">{item.description || "No description provided."}</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-sm">
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Components</p>
