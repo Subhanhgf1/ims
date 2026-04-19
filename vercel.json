@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/inventory/finished-goods/auto-replenish",
-      "schedule": "0 0 * * 1"
+      "schedule": "0 6 * * 6"
     }
   ]
 }
