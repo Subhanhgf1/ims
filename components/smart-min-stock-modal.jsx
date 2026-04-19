@@ -77,7 +77,11 @@ export default function SmartMinStockModal({
     try {
       const adjustments = finalSuggestions.map(s => ({
         id: s.id,
-        fields: { minimumStock: s.suggestedMin.toString() }
+        fields: { 
+          minimumStock: s.suggestedMin.toString(),
+          targetDays: targetDays.toString(),
+          dailyConsumption: s.dailyAvg.toString()
+        }
       }))
 
       const response = await fetch("/api/inventory/finished-goods/bulk-adjust", {

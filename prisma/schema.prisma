@@ -107,6 +107,8 @@ model RawMaterial {
   salesOrderItems       SalesOrderItem[]
   returnItems           ReturnItem[]           @relation("ReturnItemRawMaterial")
   receivedAs            ItemReceivedAs         @default(RAW)
+  targetDays            Int?
+  dailyConsumption      Float?
 
   @@map("raw_materials")
 }
@@ -152,6 +154,8 @@ model FinishedGood {
   returnItems             ReturnItem[]             @relation("ReturnItemFinishedGood")
   bundleItems             ProductBundleItem[]      @relation("BundleItemToFinishedGood")
   receivedAs              ItemReceivedAs           @default(FINISHED)
+  targetDays              Int?
+  dailyConsumption        Float?
 
   @@map("finished_goods")
 }

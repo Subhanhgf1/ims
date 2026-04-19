@@ -170,6 +170,7 @@ export default function Inventory() {
   const [supplierFilter, setSupplierFilter] = useState("all")
   const [locationFilter, setLocationFilter] = useState("all")
   const [receivedAsFilter, setReceivedAsFilter] = useState("all")
+  const [sortBy, setSortBy] = useState("name-asc")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [activeTab, setActiveTab] = useState("finished-goods")
@@ -346,6 +347,27 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     return "in-stock"
   }
 
+  const getDaysLeft = (item) => {
+    if (!item.dailyConsumption || item.dailyConsumption <= 0) return null
+    return Math.max(0, Math.floor(item.quantity / item.dailyConsumption))
+  }
+
+  const sortItems = (items) => {
+    return [...items].sort((a, b) => {
+      if (sortBy === "name-asc") return a.name.localeCompare(b.name)
+      if (sortBy === "name-desc") return b.name.localeCompare(a.name)
+      if (sortBy === "sku-asc") return a.sku.localeCompare(b.sku)
+      if (sortBy === "qty-asc") return a.quantity - b.quantity
+      if (sortBy === "qty-desc") return b.quantity - a.quantity
+      if (sortBy === "days-left") {
+        const aVal = a.dailyConsumption > 0 ? a.quantity / a.dailyConsumption : 999999
+        const bVal = b.dailyConsumption > 0 ? b.quantity / b.dailyConsumption : 999999
+        return aVal - bVal
+      }
+      return 0
+    })
+  }
+
   const toggleStatusFilter = (value) => {
     setStatusFilters((prev) => {
       const next = new Set(prev)
@@ -368,22 +390,25 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
     return matchesSearch && matchesStatusFilter(item) && matchesSupplier && matchesLocation && matchesReceivedAs
   })
+  const sortedRawMaterials = sortItems(filteredRawMaterials)
 
-const filteredFinishedGoods = finishedGoods.filter((item) => {
-  const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
-  const matchesCategory = categoryFilter === "all" || item.categoryId === categoryFilter
-  const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
-  return matchesSearch && matchesStatusFilter(item) && matchesLocation && matchesCategory && matchesReceivedAs
-})
+  const filteredFinishedGoods = finishedGoods.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
+    const matchesCategory = categoryFilter === "all" || item.categoryId === categoryFilter
+    const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
+    return matchesSearch && matchesStatusFilter(item) && matchesLocation && matchesCategory && matchesReceivedAs
+  })
+  const sortedFinishedGoods = sortItems(filteredFinishedGoods)
 
-const filteredBundles = productBundles.filter((item) => {
-  const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
-  return matchesSearch && matchesStatusFilter(item) && matchesReceivedAs
-})
+  const filteredBundles = productBundles.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
+    return matchesSearch && matchesStatusFilter(item) && matchesReceivedAs
+  })
+  const sortedBundles = sortItems(filteredBundles)
 
   const handleItemSelect = (itemId) => {
     setSelectedItems((prev) => prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId])
@@ -421,7 +446,7 @@ const filteredBundles = productBundles.filter((item) => {
 
   // ─── Bulk Action Handler ─────────────────────────────────────────────────
   const handleBulkAction = async (actionId) => {
-    const currentItems = activeTab === "raw-materials" ? filteredRawMaterials : filteredFinishedGoods
+    const currentItems = activeTab === "raw-materials" ? sortedRawMaterials : sortedFinishedGoods
     const selectedItemsData = currentItems.filter((item) => selectedItems.includes(item.id))
 
     switch (actionId) {
@@ -750,9 +775,24 @@ const clearAllFilters = () => {
 
       {/* ── Filters ── */}
       <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search by name or SKU..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search by name or SKU..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+          </div>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="sku-asc">SKU (A-Z)</SelectItem>
+              <SelectItem value="qty-asc">Quantity (Low to High)</SelectItem>
+              <SelectItem value="qty-desc">Quantity (High to Low)</SelectItem>
+              <SelectItem value="days-left">Days Ending In</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex flex-wrap gap-4 items-start">
@@ -894,7 +934,9 @@ const clearAllFilters = () => {
             </div>
           )}
           <div className="grid gap-4">
-            {filteredRawMaterials.map((item) => (
+            {sortedRawMaterials.map((item) => {
+              const daysLeft = getDaysLeft(item)
+              return (
               <Card key={item.id}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
@@ -914,6 +956,16 @@ const clearAllFilters = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div><span className="font-medium">Quantity:</span> {item.quantity} {item.unit}</div>
                           <div><span className="font-medium">Min Stock:</span> {item.minimumStock}</div>
+                          {item.targetDays && (
+                            <div className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded w-fit">
+                              Maintained for {item.targetDays} days
+                            </div>
+                          )}
+                          {daysLeft !== null && (
+                            <Badge variant={daysLeft <= 1 ? "destructive" : daysLeft <= 3 ? "secondary" : "outline"} className="mt-1">
+                              {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Stock ending in 1 day" : `${daysLeft} days stock left`}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -955,7 +1007,9 @@ const clearAllFilters = () => {
             </div>
           )}
           <div className="grid gap-4">
-            {filteredFinishedGoods.map((item) => (
+            {sortedFinishedGoods.map((item) => {
+              const daysLeft = getDaysLeft(item)
+              return (
               <Card key={item.id}>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start">
@@ -984,6 +1038,16 @@ const clearAllFilters = () => {
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                           <div><span className="font-medium">Quantity:</span> {item.quantity} {item.unit}</div>
                           <div><span className="font-medium">Price:</span> {item.price}</div>
+                          {item.targetDays && (
+                            <div className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded w-fit">
+                              Maintained for {item.targetDays} days
+                            </div>
+                          )}
+                          {daysLeft !== null && (
+                            <Badge variant={daysLeft <= 1 ? "destructive" : daysLeft <= 3 ? "secondary" : "outline"} className="mt-1">
+                              {daysLeft <= 0 ? "Stock Out" : daysLeft === 1 ? "Stock ending in 1 day" : `${daysLeft} days stock left`}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1023,14 +1087,14 @@ const clearAllFilters = () => {
             </div>
           )}
           <div className="grid gap-4">
-            {filteredBundles.length === 0 ? (
+            {sortedBundles.length === 0 ? (
               <div className="text-center py-12 border rounded-xl bg-muted/20">
                 <Layers className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                 <h3 className="text-lg font-medium">No bundles found</h3>
                 <p className="text-muted-foreground">Create your first bundle to get started</p>
               </div>
             ) : (
-              filteredBundles.map((item) => (
+              sortedBundles.map((item) => (
                 <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">

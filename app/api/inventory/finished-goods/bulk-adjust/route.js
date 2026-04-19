@@ -47,11 +47,11 @@ export async function POST(request) {
 
       // 1. Field edits (price, cost, locationId, categoryId, minimumStock)
       if (fields && typeof fields === "object") {
-        const ALLOWED_FIELDS = ["price", "cost", "locationId", "categoryId", "minimumStock", "receivedAs"]
+        const ALLOWED_FIELDS = ["price", "cost", "locationId", "categoryId", "minimumStock", "receivedAs", "targetDays", "dailyConsumption"]
         for (const key of ALLOWED_FIELDS) {
           if (fields[key] !== undefined && fields[key] !== "") {
             // coerce numeric fields
-            if (["price", "cost"].includes(key)) {
+            if (["price", "cost", "dailyConsumption"].includes(key)) {
               const num = parseFloat(fields[key])
               if (isNaN(num) || num < 0) {
                 return NextResponse.json(
@@ -60,7 +60,7 @@ export async function POST(request) {
                 )
               }
               updateData[key] = num
-            } else if (key === "minimumStock") {
+            } else if (["minimumStock", "targetDays"].includes(key)) {
               const num = parseInt(fields[key], 10)
               if (isNaN(num) || num < 0) {
                 return NextResponse.json(

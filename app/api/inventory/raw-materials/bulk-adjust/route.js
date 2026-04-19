@@ -36,13 +36,13 @@ export async function POST(request) {
 
       // 1. Field edits
       if (fields && typeof fields === "object") {
-        const ALLOWED_FIELDS = ["cost", "locationId", "minimumStock", "receivedAs", "supplierId"]
+        const ALLOWED_FIELDS = ["cost", "locationId", "minimumStock", "receivedAs", "supplierId", "targetDays", "dailyConsumption"]
         for (const key of ALLOWED_FIELDS) {
           if (fields[key] !== undefined && fields[key] !== "") {
-            if (key === "cost") {
+            if (["cost", "dailyConsumption"].includes(key)) {
               const num = parseFloat(fields[key])
               if (!isNaN(num) && num >= 0) updateData[key] = num
-            } else if (key === "minimumStock") {
+            } else if (["minimumStock", "targetDays"].includes(key)) {
               const num = parseInt(fields[key], 10)
               if (!isNaN(num) && num >= 0) updateData[key] = num
             } else {
