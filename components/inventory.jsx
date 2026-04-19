@@ -989,7 +989,8 @@ const clearAllFilters = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )
+          })}
           </div>
         </TabsContent>
 
@@ -1069,7 +1070,8 @@ const clearAllFilters = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )
+          })}
           </div>
         </TabsContent>
 
