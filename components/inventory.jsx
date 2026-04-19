@@ -171,6 +171,7 @@ export default function Inventory() {
   const [locationFilter, setLocationFilter] = useState("all")
   const [receivedAsFilter, setReceivedAsFilter] = useState("all")
   const [sortBy, setSortBy] = useState("name-asc")
+  const [isReplenishing, setIsReplenishing] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [activeTab, setActiveTab] = useState("finished-goods")
@@ -410,6 +411,40 @@ const [categoryFilter, setCategoryFilter] = useState("all")
   })
   const sortedBundles = sortItems(filteredBundles)
 
+  const handleAutoReplenish = async () => {
+    if (!confirm("This will scan your inventory and automatically create inbound orders for items below maintenance targets. Proceed?")) return
+    try {
+      setIsReplenishing(true)
+      const response = await fetch("/api/inventory/finished-goods/auto-replenish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: data.itemCount > 0 ? "Replenishment Triggered" : "Inventory Healthy",
+          description: data.itemCount > 0 ? `${data.message}. PO: ${data.poNumber}` : data.message,
+        })
+        if (data.itemCount > 0) {
+            // Optional: redirect to PO page or refresh
+        }
+      } else {
+        throw new Error(data.error || "Failed to run replenishment")
+      }
+    } catch (error) {
+      toast({
+        title: "Replenishment Failed",
+        description: error.message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsReplenishing(false)
+    }
+  }
+
   const handleItemSelect = (itemId) => {
     setSelectedItems((prev) => prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId])
   }
@@ -560,10 +595,16 @@ const clearAllFilters = () => {
               )}
             </DialogTrigger>
             {activeTab === "finished-goods" && can(PERMISSIONS.INVENTORY_EDIT) && (
-              <Button variant="outline" onClick={() => setIsSmartMinStockOpen(true)} className="border-primary/20 hover:bg-primary/5 text-primary">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Smart Min Stock (All)
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsSmartMinStockOpen(true)} className="border-primary/20 hover:bg-primary/5 text-primary">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Smart Min Stock (All)
+                </Button>
+                <Button variant="outline" onClick={handleAutoReplenish} disabled={isReplenishing} className="border-blue-200 hover:bg-blue-50 text-blue-600">
+                    {isReplenishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
+                    Smart Replenish
+                </Button>
+              </div>
             )}
             <DialogContent className="max-w-2xl">
               <DialogHeader>
