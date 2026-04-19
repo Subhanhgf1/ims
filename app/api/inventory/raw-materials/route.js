@@ -62,7 +62,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const data = await request.json()
-    const { name, description, unit, cost, minimumStock, supplierId, locationId } = data
+    const { name, description, unit, cost, minimumStock, supplierId, locationId, receivedAs } = data
 
     if (!name || !unit || cost === undefined || !supplierId || !locationId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -80,6 +80,7 @@ export async function POST(request) {
         minimumStock: Number.parseInt(minimumStock) || 0,
         supplierId,
         locationId,
+        receivedAs,
       },
       include: {
         supplier: { select: { name: true } },

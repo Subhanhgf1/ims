@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const data = await request.json()
-    const { name, sku, description, price, cost, status, items, components, unit, minimumStock, locationId } = data
+    const { name, sku, description, price, cost, status, items, components, unit, minimumStock, locationId, receivedAs } = data
     const finalItems = items || components
 
     if (!name || !sku || !finalItems || !Array.isArray(finalItems)) {
@@ -43,6 +43,7 @@ export async function POST(request) {
         minimumStock: Number.parseInt(minimumStock) || 0,
         locationId: locationId || null,
         status: status || "IN_STOCK",
+        receivedAs: receivedAs || "FINISHED",
         items: {
           create: finalItems.map(item => ({
             finishedGoodId: item.finishedGoodId,

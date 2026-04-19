@@ -19,6 +19,7 @@ const EDITABLE_FIELDS = [
   { key: "minimumStock", label: "Min Stock",     type: "number", step: "1"    },
   { key: "locationId",   label: "Location",      type: "select"               },
   { key: "categoryId",   label: "Category",      type: "select"               },
+  { key: "receivedAs",   label: "Receive As",    type: "select"               },
 ]
 
 export default function BulkEditModal({
@@ -36,7 +37,7 @@ export default function BulkEditModal({
   // ── Field-edit state ──────────────────────────────────────────────────────
   // globalFields: the values the user wants to apply to ALL selected items
   const [globalFields, setGlobalFields] = useState({
-    price: "", cost: "", minimumStock: "", locationId: "", categoryId: "",
+    price: "", cost: "", minimumStock: "", locationId: "", categoryId: "", receivedAs: "",
   })
   // perItemFields: overrides per item (same shape as globalFields)
   const [perItemFields, setPerItemFields] = useState({})
@@ -77,10 +78,11 @@ export default function BulkEditModal({
         minimumStock: item.minimumStock?.toString() ?? "",
         locationId:   item.locationId              ?? "",
         categoryId:   item.categoryId              ?? "",
+        receivedAs:   item.receivedAs              ?? "",
       }
     }
     setPerItemFields(map)
-    setGlobalFields({ price: "", cost: "", minimumStock: "", locationId: "", categoryId: "" })
+    setGlobalFields({ price: "", cost: "", minimumStock: "", locationId: "", categoryId: "", receivedAs: "" })
   }, [selectedItems])
 
   // ── Field-edit helpers ────────────────────────────────────────────────────
@@ -139,6 +141,7 @@ export default function BulkEditModal({
         minimumStock: item.minimumStock?.toString() ?? "",
         locationId:   item.locationId              ?? "",
         categoryId:   item.categoryId              ?? "",
+        receivedAs:   item.receivedAs              ?? "",
       }
       const changedFields = {}
       for (const key of Object.keys(original)) {
@@ -219,6 +222,12 @@ export default function BulkEditModal({
         ...categories.map((c) => (
           <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
         )),
+      ]
+    }
+    if (key === "receivedAs") {
+      return [
+        <SelectItem key="FINISHED" value="FINISHED">Finished Good</SelectItem>,
+        <SelectItem key="RAW" value="RAW">Raw Material</SelectItem>,
       ]
     }
     return null
@@ -403,6 +412,23 @@ export default function BulkEditModal({
                               {categories.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                               ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Receive As */}
+                        <div className="lg:col-span-2">
+                          <Label className="text-xs">Receive As</Label>
+                          <Select
+                            value={fields.receivedAs ?? ""}
+                            onValueChange={(val) => updatePerItemField(item.id, "receivedAs", val)}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Select…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="FINISHED">Finished Good</SelectItem>
+                              <SelectItem value="RAW">Raw Material</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

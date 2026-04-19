@@ -25,52 +25,73 @@ export async function POST(request) {
     const adjustmentQueries = []
 
     for (const adj of adjustments) {
-      const { id, type, quantity, reason } = adj
-
-      if (!id || !type || !quantity || !reason) {
-        return NextResponse.json({ error: `Missing required fields for item ${id}` }, { status: 400 })
-      }
+      const { id, type, quantity, reason, fields } = adj
 
       const item = itemMap.get(id)
       if (!item) {
         return NextResponse.json({ error: `Item ${id} not found` }, { status: 404 })
       }
 
-      let newQuantity = item.quantity
-      if (type === "INCREASE") {
-        newQuantity += quantity
-      } else if (type === "DECREASE") {
-        newQuantity -= quantity
-        if (newQuantity < 0) {
-          return NextResponse.json({ error: `Insufficient stock for item ${id}` }, { status: 400 })
+      const updateData = {}
+
+      // 1. Field edits
+      if (fields && typeof fields === "object") {
+        const ALLOWED_FIELDS = ["cost", "locationId", "minimumStock", "receivedAs", "supplierId"]
+        for (const key of ALLOWED_FIELDS) {
+          if (fields[key] !== undefined && fields[key] !== "") {
+            if (key === "cost") {
+              const num = parseFloat(fields[key])
+              if (!isNaN(num) && num >= 0) updateData[key] = num
+            } else if (key === "minimumStock") {
+              const num = parseInt(fields[key], 10)
+              if (!isNaN(num) && num >= 0) updateData[key] = num
+            } else {
+              updateData[key] = fields[key]
+            }
+          }
         }
-      } else {
-        return NextResponse.json({ error: `Invalid type for item ${id}` }, { status: 400 })
       }
 
-      // Queue updates instead of running them immediately
-      updateQueries.push(
-        prisma.rawMaterial.update({
-          where: { id },
-          data: { quantity: newQuantity },
-        }),
-      )
+      // 2. Quantity adjustment
+      if (type && quantity !== undefined) {
+        if (!reason || !reason.trim()) {
+          return NextResponse.json({ error: `Reason is required for item ${id}` }, { status: 400 })
+        }
 
-      adjustmentQueries.push(
-        prisma.inventoryAdjustment.create({
-          data: {
-            type,
-            quantity,
-            reason,
-            reference,
-            userId,
-            rawMaterialId: id,
-          },
-          include: {
-            user: { select: { name: true } },
-          },
-        }),
-      )
+        const qty = parseInt(quantity, 10)
+        let newQuantity = item.quantity
+        if (type === "INCREASE") {
+          newQuantity += qty
+        } else if (type === "DECREASE") {
+          newQuantity -= qty
+          if (newQuantity < 0) {
+            return NextResponse.json({ error: `Insufficient stock for item ${id}` }, { status: 400 })
+          }
+        }
+        updateData.quantity = newQuantity
+
+        adjustmentQueries.push(
+          prisma.inventoryAdjustment.create({
+            data: {
+              type,
+              quantity: qty,
+              reason: reason.trim(),
+              reference: reference || `Bulk adjustment ${new Date().toISOString()}`,
+              userId,
+              rawMaterialId: id,
+            },
+          })
+        )
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        updateQueries.push(
+          prisma.rawMaterial.update({
+            where: { id },
+            data: updateData,
+          })
+        )
+      }
     }
 
     // Run all updates + adjustments in a single atomic transaction

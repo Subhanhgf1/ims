@@ -28,7 +28,7 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params
     const data = await request.json()
-    const { name, sku, description, price, cost, status, items, components, unit, minimumStock, locationId } = data
+    const { name, sku, description, price, cost, status, items, components, unit, minimumStock, locationId, receivedAs } = data
     const finalItems = items || components
 
     const bundle = await prisma.productBundle.update({
@@ -43,6 +43,7 @@ export async function PUT(request, { params }) {
         minimumStock: Number.parseInt(minimumStock) || 0,
         locationId: locationId || null,
         status: status || "IN_STOCK",
+        receivedAs: receivedAs || "FINISHED",
         items: {
           deleteMany: {},
           create: finalItems?.map(item => ({

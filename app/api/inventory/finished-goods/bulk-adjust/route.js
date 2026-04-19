@@ -47,7 +47,7 @@ export async function POST(request) {
 
       // 1. Field edits (price, cost, locationId, categoryId, minimumStock)
       if (fields && typeof fields === "object") {
-        const ALLOWED_FIELDS = ["price", "cost", "locationId", "categoryId", "minimumStock"]
+        const ALLOWED_FIELDS = ["price", "cost", "locationId", "categoryId", "minimumStock", "receivedAs"]
         for (const key of ALLOWED_FIELDS) {
           if (fields[key] !== undefined && fields[key] !== "") {
             // coerce numeric fields

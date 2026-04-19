@@ -33,7 +33,7 @@ export async function POST(request) {
     const { 
       name, sku, description, unit, cost, price, 
       minimumStock, locationId, imageUrl, 
-      isBundle, components // components: [{id, quantity}]
+      isBundle, components, receivedAs // components: [{id, quantity}]
     } = data
 
     if (!name || !sku || !unit || cost === undefined || price === undefined || !locationId) {
@@ -51,6 +51,7 @@ export async function POST(request) {
         minimumStock: Number.parseInt(minimumStock) || 0,
         locationId,
         imageUrl: imageUrl || null,
+        receivedAs,
       },
       include: {
         location: {

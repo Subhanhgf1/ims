@@ -106,6 +106,7 @@ model RawMaterial {
   receivingRecords      ReceivingRecord[]      @relation("ReceivingRawMaterial")
   salesOrderItems       SalesOrderItem[]
   returnItems           ReturnItem[]           @relation("ReturnItemRawMaterial")
+  receivedAs            ItemReceivedAs         @default(RAW)
 
   @@map("raw_materials")
 }
@@ -150,6 +151,7 @@ model FinishedGood {
   inventoryOrders         InventoryOrder[]         @relation("InventoryOrders")
   returnItems             ReturnItem[]             @relation("ReturnItemFinishedGood")
   bundleItems             ProductBundleItem[]      @relation("BundleItemToFinishedGood")
+  receivedAs              ItemReceivedAs           @default(FINISHED)
 
   @@map("finished_goods")
 }
@@ -498,6 +500,7 @@ model ProductBundle {
   location        Location?            @relation(fields: [locationId], references: [id])
   
   items           ProductBundleItem[]
+  receivedAs      ItemReceivedAs       @default(FINISHED)
   
   @@map("product_bundles")
 }
@@ -630,4 +633,8 @@ enum ReturnItemCondition {
   DEFECTIVE
   EXPIRED
   USED
+}
+enum ItemReceivedAs {
+  RAW
+  FINISHED
 }

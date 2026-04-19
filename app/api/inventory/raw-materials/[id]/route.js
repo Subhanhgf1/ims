@@ -7,7 +7,7 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params
     const data = await request.json()
-    const { name, description, unit, cost, minimumStock, supplierId, locationId } = data
+    const { name, description, unit, cost, minimumStock, supplierId, locationId, receivedAs } = data
 
     if (!name || !unit || !supplierId || !locationId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -23,6 +23,7 @@ export async function PUT(request, { params }) {
         minimumStock: minimumStock ? Number.parseInt(minimumStock) : 0,
         supplierId,
         locationId,
+        receivedAs,
       },
       include: {
         supplier: { select: { name: true } },

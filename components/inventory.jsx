@@ -169,6 +169,7 @@ export default function Inventory() {
   const [statusFilters, setStatusFilters] = useState(new Set())
   const [supplierFilter, setSupplierFilter] = useState("all")
   const [locationFilter, setLocationFilter] = useState("all")
+  const [receivedAsFilter, setReceivedAsFilter] = useState("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [activeTab, setActiveTab] = useState("finished-goods")
@@ -206,6 +207,7 @@ export default function Inventory() {
   const [formData, setFormData] = useState({
     name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
     minimumStock: "0", supplierId: "", locationId: "", imageUrl: "", categoryId: "",
+    receivedAs: "",
     components: [] // [{finishedGoodId, quantity}]
   })
 
@@ -298,6 +300,7 @@ const [categoryFilter, setCategoryFilter] = useState("all")
   const resetForm = () => {
     setFormData({ name: "", sku: "", description: "", unit: "", cost: "0", price: "0",
       minimumStock: "0", supplierId: "", locationId: "", imageUrl: "", categoryId: "",
+      receivedAs: activeTab === "raw-materials" ? "RAW" : "FINISHED",
       components: []
     })
   }
@@ -311,6 +314,7 @@ const [categoryFilter, setCategoryFilter] = useState("all")
     minimumStock: item.minimumStock?.toString() || "", supplierId: item.supplierId || "",
     locationId: item.locationId || "", imageUrl: item.imageUrl || "",
     categoryId: item.categoryId || "",
+    receivedAs: item.receivedAs || (activeTab === "raw-materials" ? "RAW" : "FINISHED"),
     components: item.items?.map(c => ({
       finishedGoodId: c.finishedGood.id,
       name: c.finishedGood.name,
@@ -361,7 +365,8 @@ const [categoryFilter, setCategoryFilter] = useState("all")
       item.sku.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesSupplier = supplierFilter === "all" || item.supplierId === supplierFilter
     const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
-    return matchesSearch && matchesStatusFilter(item) && matchesSupplier && matchesLocation
+    const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
+    return matchesSearch && matchesStatusFilter(item) && matchesSupplier && matchesLocation && matchesReceivedAs
   })
 
 const filteredFinishedGoods = finishedGoods.filter((item) => {
@@ -369,13 +374,15 @@ const filteredFinishedGoods = finishedGoods.filter((item) => {
     item.sku.toLowerCase().includes(searchTerm.toLowerCase())
   const matchesLocation = locationFilter === "all" || item.locationId === locationFilter
   const matchesCategory = categoryFilter === "all" || item.categoryId === categoryFilter
-  return matchesSearch && matchesStatusFilter(item) && matchesLocation && matchesCategory
+  const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
+  return matchesSearch && matchesStatusFilter(item) && matchesLocation && matchesCategory && matchesReceivedAs
 })
 
 const filteredBundles = productBundles.filter((item) => {
   const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  return matchesSearch && matchesStatusFilter(item)
+  const matchesReceivedAs = receivedAsFilter === "all" || item.receivedAs === receivedAsFilter
+  return matchesSearch && matchesStatusFilter(item) && matchesReceivedAs
 })
 
   const handleItemSelect = (itemId) => {
@@ -487,6 +494,7 @@ const clearAllFilters = () => {
   setSupplierFilter("all")
   setLocationFilter("all")
   setCategoryFilter("all")
+  setReceivedAsFilter("all")
 }
   if (loading) {
     return (
@@ -579,23 +587,33 @@ const clearAllFilters = () => {
                     </div>
                   </div>
                 )}
-               <div className="grid grid-cols-2 gap-4">
-  <div>
-    <Label htmlFor="minimumStock">Minimum Stock</Label>
-    <Input id="minimumStock" type="number" value={formData.minimumStock} onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value })} />
-  </div>
-  <div>
-    <Label htmlFor="locationId">Location *</Label>
-    <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })}>
-      <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
-      <SelectContent>
-        {locations.map((location) => (
-          <SelectItem key={location.id} value={location.id}>{location.code} - {location.zone}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-</div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="minimumStock">Minimum Stock</Label>
+                    <Input id="minimumStock" type="number" value={formData.minimumStock} onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label htmlFor="locationId">Location *</Label>
+                    <Select value={formData.locationId} onValueChange={(value) => setFormData({ ...formData, locationId: value })}>
+                      <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
+                      <SelectContent>
+                        {locations.map((location) => (
+                          <SelectItem key={location.id} value={location.id}>{location.code} - {location.zone}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="receivedAs">Receive As *</Label>
+                    <Select value={formData.receivedAs} onValueChange={(value) => setFormData({ ...formData, receivedAs: value })}>
+                      <SelectTrigger><SelectValue placeholder="Replenish as..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="FINISHED">Finished Good</SelectItem>
+                        <SelectItem value="RAW">Raw Material</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
 {activeTab === "bundles" && (
   <div className="space-y-4 pt-2 border-t mt-4">
@@ -792,6 +810,14 @@ const clearAllFilters = () => {
     </SelectContent>
   </Select>
 )}
+          <Select value={receivedAsFilter} onValueChange={setReceivedAsFilter}>
+            <SelectTrigger className="w-40"><SelectValue placeholder="Receive As" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any Receive As</SelectItem>
+              <SelectItem value="FINISHED">Finished Good</SelectItem>
+              <SelectItem value="RAW">Raw Material</SelectItem>
+            </SelectContent>
+          </Select>
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearAllFilters}>Clear Filters</Button>
           )}
@@ -834,6 +860,14 @@ const clearAllFilters = () => {
     </button>
   </Badge>
 )}
+            {receivedAsFilter !== "all" && (
+              <Badge variant="secondary" className="flex items-center gap-1 pr-1">
+                Received as: {receivedAsFilter}
+                <button type="button" onClick={() => setReceivedAsFilter("all")} className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
           </div>
         )}
       </div>
@@ -871,6 +905,9 @@ const clearAllFilters = () => {
                           <Package className="h-4 w-4" />
                           <h3 className="font-semibold">{item.name}</h3>
                           <Badge variant="outline">{item.sku}</Badge>
+                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                            Receive as: {item.receivedAs}
+                          </Badge>
                           {getStatusBadge(item)}
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
@@ -938,6 +975,9 @@ const clearAllFilters = () => {
                           <h3 className="font-semibold">{item.name}</h3>
                           <Badge variant="outline">{item.sku}</Badge>
                           {item.category && <Badge variant="secondary" className="text-xs">{item.category.name}</Badge>}
+                          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                            Receive as: {item.receivedAs}
+                          </Badge>
                           {getStatusBadge(item)}
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
@@ -1001,6 +1041,9 @@ const clearAllFilters = () => {
                             <Layers className="h-4 w-4 text-blue-500" />
                             <h3 className="font-semibold">{item.name}</h3>
                             <Badge variant="outline" className="font-mono">{item.sku}</Badge>
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                              Receive as: {item.receivedAs}
+                            </Badge>
                             {getStatusBadge(item)}
                           </div>
                           <p className="text-sm text-muted-foreground mb-3">{item.description || "No description provided."}</p>
