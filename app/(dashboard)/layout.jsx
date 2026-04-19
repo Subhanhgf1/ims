@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/auth"
 import DashboardNav from "@/components/dashboard-nav"
 import LoginForm from "@/components/login-form"
+import AIAssistant from "@/components/ai-assistant"
 
 export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth()
@@ -30,6 +31,9 @@ export default function DashboardLayout({ children }) {
           {children}
         </div>
       </main>
+
+      {/* AI Assistant */}
+      <AIAssistant />
 
     </div>
   )

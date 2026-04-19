@@ -7,10 +7,25 @@ export const dynamic = "force-dynamic"
 
 export async function POST(request) {
   try {
-    const { userId } = await request.json()
+    const authHeader = request.headers.get("authorization");
+    const isCronTrigger = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+    
+    let userId;
+
+    if (isCronTrigger) {
+      // Triggered by Vercel Cron
+      userId = process.env.SYSTEM_USER_ID;
+    } else {
+      // Triggered manually from UI
+      const body = await request.json().catch(() => ({}));
+      userId = body.userId;
+    }
 
     if (!userId) {
-      return NextResponse.json({ error: "User ID is required" }, { status: 400 })
+      return NextResponse.json(
+        { error: isCronTrigger ? "SYSTEM_USER_ID environment variable is not configured" : "User ID is required" }, 
+        { status: 400 }
+      );
     }
 
     const EXCLUDED_CATEGORY_ID = "cmnlnckyn0000ky0410u4tvrv"
