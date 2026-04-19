@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -159,6 +160,7 @@ function BulkActionsDropdown({ count, onAction, disabled, loadingAction }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function Inventory() {
+  const { user } = useAuth()
   const { can } = usePermissions()
   const [rawMaterials, setRawMaterials] = useState([])
   const [finishedGoods, setFinishedGoods] = useState([])
@@ -577,7 +579,7 @@ const clearAllFilters = () => {
       {/* ── Header ── */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Inventory Management</h1>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-3 items-center">
           <BulkActionsDropdown
             count={selectedItems.length}
             onAction={handleBulkAction}
@@ -585,27 +587,39 @@ const clearAllFilters = () => {
             loadingAction={bulkLoadingAction}
           />
 
+          {activeTab === "finished-goods" && can(PERMISSIONS.INVENTORY_EDIT) && (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsSmartMinStockOpen(true)} 
+                className="border-primary/20 hover:bg-primary/5 text-primary h-9"
+              >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Smart Min Stock
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleAutoReplenish} 
+                disabled={isReplenishing} 
+                className="border-blue-200 hover:bg-blue-50 text-blue-600 h-9"
+              >
+                  {isReplenishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
+                  Smart Replenish
+              </Button>
+            </div>
+          )}
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               {can(PERMISSIONS.INVENTORY_EDIT) && (
-                <Button onClick={() => { resetForm(); setEditingItem(null) }}>
+                <Button size="sm" onClick={() => { resetForm(); setEditingItem(null) }} className="h-9">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Item
                 </Button>
               )}
             </DialogTrigger>
-            {activeTab === "finished-goods" && can(PERMISSIONS.INVENTORY_EDIT) && (
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setIsSmartMinStockOpen(true)} className="border-primary/20 hover:bg-primary/5 text-primary">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Smart Min Stock (All)
-                </Button>
-                <Button variant="outline" onClick={handleAutoReplenish} disabled={isReplenishing} className="border-blue-200 hover:bg-blue-50 text-blue-600">
-                    {isReplenishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Truck className="mr-2 h-4 w-4" />}
-                    Smart Replenish
-                </Button>
-              </div>
-            )}
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
