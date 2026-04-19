@@ -26,12 +26,38 @@ export async function POST(request) {
       },
     })
 
-    // 2. Identify items that need replenishment
+    // 2. Fetch pending inbound quantities (PO items not yet received)
+    const pendingPOItems = await prisma.purchaseOrderItem.findMany({
+      where: {
+        itemType: "finished_good",
+        purchaseOrder: {
+          status: { in: ["PENDING", "PARTIALLY_RECEIVED"] },
+        },
+      },
+      select: {
+        finishedGoodId: true,
+        quantity: true,
+        received: true,
+      },
+    })
+
+    const pendingQuantities = pendingPOItems.reduce((acc, item) => {
+      const pending = item.quantity - item.received
+      if (pending > 0) {
+        acc[item.finishedGoodId] = (acc[item.finishedGoodId] || 0) + pending
+      }
+      return acc
+    }, {})
+
+    // 3. Identify items that need replenishment
     const itemsToRestock = finishedGoods
       .map((item) => {
+        const pendingInbound = pendingQuantities[item.id] || 0
+        const effectiveStock = item.quantity + pendingInbound
+        
         const maintenanceTarget = (item.targetDays || 0) * (item.dailyConsumption || 0)
         const target = Math.max(item.minimumStock, maintenanceTarget)
-        const shortage = target - item.quantity
+        const shortage = target - effectiveStock
 
         if (shortage <= 0) return null
 
@@ -62,42 +88,56 @@ export async function POST(request) {
       })
     }
 
-    // 3. Calculate overall expected date (furthest lead time)
-    const maxLeadTime = Math.max(...itemsToRestock.map((i) => i.leadTimeDays))
-    const expectedDate = addDays(startOfDay(new Date()), maxLeadTime)
+    // 3. Group by receivedAs and create separate orders
+    const groups = itemsToRestock.reduce((acc, item) => {
+      if (!acc[item.receivedAs]) acc[item.receivedAs] = []
+      acc[item.receivedAs].push(item)
+      return acc
+    }, {})
 
-    // 4. Create the Purchase Order
-    const poNumber = generatePONumber()
-    const totalValue = itemsToRestock.reduce((sum, item) => sum + item.quantity * item.unitCost, 0)
+    const createdOrders = []
 
-    const purchaseOrder = await prisma.purchaseOrder.create({
-      data: {
-        poNumber,
-        supplierId: DEFAULT_SUPPLIER_ID,
-        expectedDate,
-        totalValue,
-        createdById: userId,
-        notes: "Automated replenishment based on target maintenance days and safety stock.",
-        items: {
-          create: itemsToRestock.map((item) => ({
-            itemType: "finished_good",
-            finishedGoodId: item.id,
-            quantity: item.quantity,
-            unitCost: item.unitCost,
-            totalCost: item.quantity * item.unitCost,
-          })),
+    for (const [receivedAs, items] of Object.entries(groups)) {
+      // Calculate overall expected date for this group (furthest lead time)
+      const maxLeadTime = Math.max(...items.map((i) => i.leadTimeDays))
+      const expectedDate = addDays(startOfDay(new Date()), maxLeadTime)
+
+      const poNumber = generatePONumber()
+      const totalValue = items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0)
+
+      const purchaseOrder = await prisma.purchaseOrder.create({
+        data: {
+          poNumber,
+          supplierId: DEFAULT_SUPPLIER_ID,
+          expectedDate,
+          totalValue,
+          createdById: userId,
+          notes: `Automated replenishment for ${receivedAs.toLowerCase()} goods.`,
+          items: {
+            create: items.map((item) => ({
+              itemType: "finished_good",
+              finishedGoodId: item.id,
+              quantity: item.quantity,
+              unitCost: item.unitCost,
+              totalCost: item.quantity * item.unitCost,
+            })),
+          },
         },
-      },
-    })
+      })
+      createdOrders.push({
+        poNumber: purchaseOrder.poNumber,
+        itemCount: items.length,
+        totalValue: purchaseOrder.totalValue,
+        expectedDate: purchaseOrder.expectedDate
+      })
+    }
 
     return NextResponse.json({
       message: "Smart replenishment complete",
-      poNumber: purchaseOrder.poNumber,
-      itemCount: itemsToRestock.length,
-      totalValue,
-      expectedDate: purchaseOrder.expectedDate,
+      orders: createdOrders,
+      totalValue: createdOrders.reduce((sum, o) => sum + o.totalValue, 0),
     })
-  } catch (error) {
+    } catch (error) {
     console.error("Error in auto-replenish:", error)
     return NextResponse.json({ error: "Failed to run auto-replenishment" }, { status: 500 })
   }

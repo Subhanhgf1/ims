@@ -426,12 +426,17 @@ const [categoryFilter, setCategoryFilter] = useState("all")
       const data = await response.json()
 
       if (response.ok) {
+        const hasOrders = data.orders && data.orders.length > 0
+        const poNumbers = hasOrders ? data.orders.map(o => o.poNumber).join(", ") : ""
+        
         toast({
-          title: data.itemCount > 0 ? "Replenishment Triggered" : "Inventory Healthy",
-          description: data.itemCount > 0 ? `${data.message}. PO: ${data.poNumber}` : data.message,
+          title: hasOrders ? "Replenishment Triggered" : "Inventory Healthy",
+          description: hasOrders 
+            ? `${data.message}. Order(s): ${poNumbers}` 
+            : data.message,
         })
-        if (data.itemCount > 0) {
-            // Optional: redirect to PO page or refresh
+        if (hasOrders) {
+            fetchData() // Refresh list
         }
       } else {
         throw new Error(data.error || "Failed to run replenishment")
