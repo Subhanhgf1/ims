@@ -13,7 +13,7 @@ export async function POST(req) {
   const modelMessages = await convertToModelMessages(messages);
 
   const result = streamText({
-    model: google('gemini-2.0-flash'),
+    model: google('gemini-2.5-flash'),
     messages: modelMessages, // ✅ now correctly typed
     system: `You are Antigravity, the AI Assistant for Nakson IMS (Inventory Management System).
     You have access to real-time inventory data, stock levels, and order history.
