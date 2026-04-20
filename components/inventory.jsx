@@ -905,7 +905,7 @@ export default function Inventory() {
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                 Smart Min Stock
               </Button>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={handleAutoReplenish}
@@ -916,7 +916,7 @@ export default function Inventory() {
                   ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                   : <Truck className="mr-1.5 h-3.5 w-3.5" />}
                 Smart Replenish
-              </Button>
+              </Button> */}
             </div>
           )}
 
