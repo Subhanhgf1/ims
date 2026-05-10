@@ -12,6 +12,12 @@ export async function POST(request) {
 
     const defaultCustomerId = "cmn38ksyq0000vso0u2qzmcud" // Order Processor - Nakson
     const finalCustomerId = customerId || defaultCustomerId
+
+    // Fetch a default user for automated processing
+    const defaultUser = await prisma.user.findFirst()
+    if (!defaultUser) {
+      return NextResponse.json({ error: "No users found in system" }, { status: 400 })
+    }
     
     // 1. Resolve SKUs and explode bundles
     const resolvedItems = []
@@ -101,7 +107,7 @@ export async function POST(request) {
         priority: "HIGH",
         notes: notes || `Auto-imported from ${source || "eSync"}`,
         customerId: finalCustomerId,
-        createdById: "cmozrsym70001k004kbnyocdz", // System / Warehouse User
+        createdById: defaultUser.id, // Dynamic System / Warehouse User
         items: {
           create: resolvedItems.map(item => ({
             quantity: item.quantity,
