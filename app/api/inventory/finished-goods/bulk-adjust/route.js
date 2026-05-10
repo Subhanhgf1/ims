@@ -118,6 +118,7 @@ export async function POST(request) {
             data: {
               type,
               quantity: qty,
+              balanceAfter: updateData.quantity,
               reason: reason.trim(),
               reference: reference || `Bulk adjustment ${new Date().toISOString()}`,
               userId,

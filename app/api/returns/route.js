@@ -170,7 +170,7 @@ export async function POST(request) {
 
         if (rawMaterial) {
           // It's a raw material - simple update
-          await tx.rawMaterial.update({
+          const updatedRm = await tx.rawMaterial.update({
             where: { id: item.imsItemId },
             data: { quantity: { increment: quantity } }
           })
@@ -186,6 +186,7 @@ export async function POST(request) {
           adjustments.push({
             type: "INCREASE",
             quantity,
+            balanceAfter: updatedRm.quantity,
             reason: `Return processed - Order ${orderNumber} (${item.condition})`,
             reference: orderNumber,
             userId: createdById,
@@ -201,7 +202,7 @@ export async function POST(request) {
 
         if (finishedGood) {
           // Simple finished good - normal update
-          await tx.finishedGood.update({
+          const updatedFg = await tx.finishedGood.update({
             where: { id: item.imsItemId },
             data: { quantity: { increment: quantity } }
           })
@@ -217,6 +218,7 @@ export async function POST(request) {
           adjustments.push({
             type: "INCREASE",
             quantity,
+            balanceAfter: updatedFg.quantity,
             reason: `Return processed - Order ${orderNumber} (${item.condition})`,
             reference: orderNumber,
             userId: createdById,
@@ -240,7 +242,7 @@ export async function POST(request) {
           for (const bundleItem of bundle.items) {
             const componentQty = quantity * bundleItem.quantity
             
-            await tx.finishedGood.update({
+            const updatedFg = await tx.finishedGood.update({
               where: { id: bundleItem.finishedGoodId },
               data: { quantity: { increment: componentQty } }
             })
@@ -257,6 +259,7 @@ export async function POST(request) {
             adjustments.push({
               type: "INCREASE",
               quantity: componentQty,
+              balanceAfter: updatedFg.quantity,
               reason: `Return processed (Bundle component) - Order ${orderNumber} (${item.condition})`,
               reference: orderNumber,
               userId: createdById,

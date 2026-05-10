@@ -132,6 +132,10 @@ export async function GET(request) {
       prisma.returnItem.findMany({
         where: { return: { createdAt: { gte: startDate } } },
         include: { finishedGood: true, rawMaterial: true }
+      }),
+      prisma.inventoryAdjustment.findMany({
+        where: { createdAt: { gte: startDate } },
+        include: { finishedGood: true, rawMaterial: true }
       })
     ])
 
@@ -149,22 +153,25 @@ export async function GET(request) {
           type: record.finishedGood ? "Finished Good" : "Raw Material",
           inbounded: 0,
           outbounded: 0,
-          returned: 0
+          returned: 0,
+          adjusted: 0
         };
       }
       
       if (type === 'outbound') itemUsageMap[item.id].outbounded += q;
       if (type === 'inbound') itemUsageMap[item.id].inbounded += q;
       if (type === 'return') itemUsageMap[item.id].returned += q;
+      if (type === 'adjustment') itemUsageMap[item.id].adjusted += Math.abs(q);
     };
 
     salesItems.forEach(si => processItem(si, 'outbound', si.quantity));
     receivingRecords.forEach(rr => processItem(rr, 'inbound', rr.quantity));
     returnItems.forEach(ri => processItem(ri, 'return', ri.quantity));
+    inventoryAdjustments.forEach(ia => processItem(ia, 'adjustment', ia.quantity));
 
     // Calculate total movement for sorting
     const itemUsage = Object.values(itemUsageMap)
-      .map(item => ({ ...item, totalMovement: item.inbounded + item.outbounded + item.returned }))
+      .map(item => ({ ...item, totalMovement: item.inbounded + item.outbounded + item.returned + item.adjusted }))
       .sort((a, b) => b.totalMovement - a.totalMovement)
       .slice(0, 100);
 

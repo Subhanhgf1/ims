@@ -52,7 +52,7 @@ export async function POST(request, { params }) {
           )
         }
 
-        await prisma.rawMaterial.update({
+        const updatedRm = await prisma.rawMaterial.update({
           where: { id: shipmentItem.rawMaterial.id },
           data: {
             quantity: { decrement: shippedQuantity },
@@ -64,6 +64,7 @@ export async function POST(request, { params }) {
           data: {
             type: "DECREASE",
             quantity: shippedQuantity,
+            balanceAfter: updatedRm.quantity,
             reason: `Outbound shipment - ${shipment.shipmentNumber}`,
             reference: shipment.shipmentNumber,
             userId,
@@ -79,7 +80,7 @@ export async function POST(request, { params }) {
           )
         }
 
-        await prisma.finishedGood.update({
+        const updatedFg = await prisma.finishedGood.update({
           where: { id: shipmentItem.finishedGood.id },
           data: {
             quantity: { decrement: shippedQuantity },
@@ -91,6 +92,7 @@ export async function POST(request, { params }) {
           data: {
             type: "DECREASE",
             quantity: shippedQuantity,
+            balanceAfter: updatedFg.quantity,
             reason: `Outbound shipment - ${shipment.shipmentNumber}`,
             reference: shipment.shipmentNumber,
             userId,

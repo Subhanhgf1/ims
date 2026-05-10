@@ -46,7 +46,7 @@ export async function POST(request, { params }) {
       for (const item of productionOrder.items) {
         const consumeQuantity = Math.floor((item.requiredQuantity * producedQuantity) / productionOrder.targetQuantity)
 
-        await tx.rawMaterial.update({
+        const updatedRm = await tx.rawMaterial.update({
           where: { id: item.rawMaterialId },
           data: {
             quantity: {
@@ -65,6 +65,7 @@ export async function POST(request, { params }) {
           data: {
             type: "PRODUCTION",
             quantity: -consumeQuantity,
+            balanceAfter: updatedRm.quantity,
             reason: `Production order ${productionOrder.productionNumber}`,
             reference: productionOrder.productionNumber,
             userId,
@@ -74,7 +75,7 @@ export async function POST(request, { params }) {
       }
 
       // Add finished goods to inventory
-      await tx.finishedGood.update({
+      const updatedFg = await tx.finishedGood.update({
         where: { id: productionOrder.finishedGoodId },
         data: {
           quantity: {
@@ -88,6 +89,7 @@ export async function POST(request, { params }) {
         data: {
           type: "PRODUCTION",
           quantity: Number.parseInt(producedQuantity),
+          balanceAfter: updatedFg.quantity,
           reason: `Production order ${productionOrder.productionNumber}`,
           reference: productionOrder.productionNumber,
           userId,

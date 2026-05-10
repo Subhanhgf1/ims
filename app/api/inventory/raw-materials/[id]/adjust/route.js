@@ -58,6 +58,7 @@ export async function POST(request, { params }) {
           data: {
             type,
             quantity: qty,
+            balanceAfter: newQuantity,
             reason,
             reference,
             userId,

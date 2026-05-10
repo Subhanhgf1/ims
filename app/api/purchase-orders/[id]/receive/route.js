@@ -140,9 +140,25 @@ export async function POST(request, { params }) {
           totalReceived: newReceivedTotal,
         })
 
+        let newBalance = 0;
+        if (poItem.rawMaterialId) {
+          const updatedRm = await tx.rawMaterial.update({
+            where: { id: poItem.rawMaterialId },
+            data: { quantity: { increment: receivedQuantity } },
+          })
+          newBalance = updatedRm.quantity;
+        } else if (poItem.finishedGoodId) {
+          const updatedFg = await tx.finishedGood.update({
+            where: { id: poItem.finishedGoodId },
+            data: { quantity: { increment: receivedQuantity } },
+          })
+          newBalance = updatedFg.quantity;
+        }
+
         const adjustment = {
           type: "INCREASE",
           quantity: receivedQuantity,
+          balanceAfter: newBalance,
           reason: `Purchase order received - ${purchaseOrder.poNumber}`,
           reference: purchaseOrder.poNumber,
           userId,
@@ -150,27 +166,10 @@ export async function POST(request, { params }) {
           finishedGoodId: poItem.finishedGoodId,
         }
         adjustments.push(adjustment)
-
-        if (poItem.rawMaterialId) {
-          inventoryOps.push(
-            tx.rawMaterial.update({
-              where: { id: poItem.rawMaterialId },
-              data: { quantity: { increment: receivedQuantity } },
-            })
-          )
-        } else if (poItem.finishedGoodId) {
-          inventoryOps.push(
-            tx.finishedGood.update({
-              where: { id: poItem.finishedGoodId },
-              data: { quantity: { increment: receivedQuantity } },
-            })
-          )
-        }
       }
 
       await Promise.all([
         ...poItemUpdates,
-        ...inventoryOps,
         receivingData.length > 0
           ? tx.receivingRecord.createMany({ data: receivingData })
           : Promise.resolve(),

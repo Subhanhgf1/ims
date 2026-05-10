@@ -55,6 +55,7 @@ export async function GET(request) {
         id: adj.id,
         type: adj.type,
         quantity: adj.quantity,
+        balanceAfter: adj.balanceAfter,
         reason: adj.reason,
         reference: adj.reference,
         createdAt: adj.createdAt,

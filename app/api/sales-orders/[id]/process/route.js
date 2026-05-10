@@ -87,6 +87,7 @@ export async function POST(request, { params }) {
         data: {
           type: "TRANSFER",
           quantity: processedQuantity,
+          balanceAfter: invItem.quantity,
           reason: `Sales order processing - ${salesOrder.soNumber}`,
           reference: salesOrder.soNumber,
           userId,

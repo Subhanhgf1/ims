@@ -105,6 +105,7 @@ export default function AuditLog() {
                   <TableHead>Item</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Change</TableHead>
+                  <TableHead>Balance</TableHead>
                   <TableHead>Reason & Reference</TableHead>
                   <TableHead>User</TableHead>
                 </TableRow>
@@ -142,6 +143,11 @@ export default function AuditLog() {
                       <TableCell>
                         <span className={`font-bold ${log.quantity > 0 ? "text-green-600" : log.quantity < 0 ? "text-red-600" : ""}`}>
                           {log.quantity > 0 ? "+" : ""}{log.quantity}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium text-gray-700">
+                          {log.balanceAfter !== null ? log.balanceAfter : "-"}
                         </span>
                       </TableCell>
                       <TableCell>

@@ -47,41 +47,42 @@ export async function POST(request, { params }) {
         if (processedQuantity <= 0) continue
 
         // Update inventory
+        let newBalance = 0;
         if (receiptItem.itemType === "raw_material" && receiptItem.rawMaterial) {
-          inventoryUpdates.push(
-            tx.rawMaterial.update({
-              where: { id: receiptItem.rawMaterial.id },
-              data: {
-                quantity: { increment: processedQuantity },
-                locationId: processItem.locationId || receiptItem.rawMaterial.locationId,
-              },
-            })
-          )
+          const updatedRm = await tx.rawMaterial.update({
+            where: { id: receiptItem.rawMaterial.id },
+            data: {
+              quantity: { increment: processedQuantity },
+              locationId: processItem.locationId || receiptItem.rawMaterial.locationId,
+            },
+          })
+          newBalance = updatedRm.quantity;
 
           // Prepare inventory adjustment record
           adjustments.push({
             type: "INCREASE",
             quantity: processedQuantity,
+            balanceAfter: newBalance,
             reason: `Inbound receipt processing - ${receipt.receiptNumber}`,
             reference: receipt.receiptNumber,
             userId,
             rawMaterialId: receiptItem.rawMaterial.id,
           })
         } else if (receiptItem.itemType === "finished_good" && receiptItem.finishedGood) {
-          inventoryUpdates.push(
-            tx.finishedGood.update({
-              where: { id: receiptItem.finishedGood.id },
-              data: {
-                quantity: { increment: processedQuantity },
-                locationId: processItem.locationId || receiptItem.finishedGood.locationId,
-              },
-            })
-          )
+          const updatedFg = await tx.finishedGood.update({
+            where: { id: receiptItem.finishedGood.id },
+            data: {
+              quantity: { increment: processedQuantity },
+              locationId: processItem.locationId || receiptItem.finishedGood.locationId,
+            },
+          })
+          newBalance = updatedFg.quantity;
 
           // Prepare inventory adjustment record
           adjustments.push({
             type: "INCREASE",
             quantity: processedQuantity,
+            balanceAfter: newBalance,
             reason: `Inbound receipt processing - ${receipt.receiptNumber}`,
             reference: receipt.receiptNumber,
             userId,
@@ -92,7 +93,6 @@ export async function POST(request, { params }) {
 
       // Execute all updates in batch
       await Promise.all([
-        ...inventoryUpdates,
         adjustments.length > 0 ? tx.inventoryAdjustment.createMany({ data: adjustments }) : Promise.resolve(),
       ])
 

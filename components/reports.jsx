@@ -12,8 +12,9 @@ import {
 } from "recharts"
 import { 
   Clock, CheckCircle, Truck, RefreshCcw, Loader2, Download, 
-  TrendingUp, Activity, UserCheck, AlertTriangle, Search, Package2
+  TrendingUp, Activity, UserCheck, AlertTriangle, Search, Package2, ClipboardList
 } from "lucide-react"
+import Link from "next/link"
 import { toast } from "@/components/ui/use-toast"
 import {
   Table,
@@ -71,8 +72,8 @@ export default function Reports() {
       ...(data.failedDeliveryStats?.conditions || []).map(c => [c.name, c.value]),
       [],
       ["Item Movement Details"],
-      ["SKU", "Name", "Type", "Inbounded", "Outbounded", "Returned", "Total Movement"],
-      ...(data.itemUsage || []).map(i => [i.sku, i.name, i.type, i.inbounded, i.outbounded, i.returned, i.totalMovement])
+      ["SKU", "Name", "Type", "Inbounded", "Outbounded", "Returned", "Adjusted", "Total Movement"],
+      ...(data.itemUsage || []).map(i => [i.sku, i.name, i.type, i.inbounded, i.outbounded, i.returned, i.adjusted, i.totalMovement])
     ].map(row => row.join(",")).join("\n")
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
@@ -450,15 +451,23 @@ export default function Reports() {
             <CardTitle>Item Movement & Usage</CardTitle>
             <CardDescription>Detailed quantity tracking for each item in the selected period</CardDescription>
           </div>
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search by SKU or Name..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex items-center gap-2 w-full max-w-lg">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by SKU or Name..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Link href="/reports/audit">
+              <Button variant="outline" size="sm" className="whitespace-nowrap">
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Audit Log
+              </Button>
+            </Link>
           </div>
         </CardHeader>
         <CardContent>
@@ -471,6 +480,7 @@ export default function Reports() {
                   <TableHead className="text-right">Inbounded</TableHead>
                   <TableHead className="text-right">Outbounded</TableHead>
                   <TableHead className="text-right">Returned</TableHead>
+                  <TableHead className="text-right">Adjusted</TableHead>
                   <TableHead className="text-right font-bold">Total Movement</TableHead>
                 </TableRow>
               </TableHeader>
@@ -500,6 +510,7 @@ export default function Reports() {
                         <TableCell className="text-right">{item.inbounded}</TableCell>
                         <TableCell className="text-right">{item.outbounded}</TableCell>
                         <TableCell className="text-right">{item.returned}</TableCell>
+                        <TableCell className="text-right">{item.adjusted}</TableCell>
                         <TableCell className="text-right font-bold">{item.totalMovement}</TableCell>
                       </TableRow>
                     ))

@@ -63,26 +63,26 @@ export async function POST(request, { params }) {
         )
 
         // Deduct inventory
+        let newBalance = 0;
         if (orderItem.finishedGoodId) {
-          finishedGoodUpdates.push(
-            tx.finishedGood.update({
-              where: { id: orderItem.finishedGoodId },
-              data: { quantity: { decrement: shippedQty } },
-            })
-          )
+          const updatedFg = await tx.finishedGood.update({
+            where: { id: orderItem.finishedGoodId },
+            data: { quantity: { decrement: shippedQty } },
+          })
+          newBalance = updatedFg.quantity;
         } else if (orderItem.rawMaterialId) {
-          rawMaterialUpdates.push(
-            tx.rawMaterial.update({
-              where: { id: orderItem.rawMaterialId },
-              data: { quantity: { decrement: shippedQty } },
-            })
-          )
+          const updatedRm = await tx.rawMaterial.update({
+            where: { id: orderItem.rawMaterialId },
+            data: { quantity: { decrement: shippedQty } },
+          })
+          newBalance = updatedRm.quantity;
         }
 
         // Inventory adjustment log
         const adjustment = {
           type: "DECREASE",
           quantity: -shippedQty,
+          balanceAfter: newBalance,
           reason: `Sales order ${salesOrder.soNumber} shipped`,
           reference: salesOrder.soNumber,
           userId,
@@ -115,8 +115,6 @@ export async function POST(request, { params }) {
       // Execute all updates in batch
       await Promise.all([
         ...itemUpdates,
-        ...finishedGoodUpdates,
-        ...rawMaterialUpdates,
       ])
 
       if (adjustments.length > 0) {

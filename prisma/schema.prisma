@@ -352,6 +352,7 @@ model InventoryAdjustment {
   id             String         @id @default(cuid())
   type           AdjustmentType
   quantity       Int
+  balanceAfter   Int?           @default(0)
   reason         String
   reference      String?
   createdAt      DateTime       @default(now())
