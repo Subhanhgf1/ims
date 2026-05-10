@@ -189,9 +189,9 @@ model PurchaseOrderItem {
   purchaseOrderId String
   rawMaterialId   String?
   finishedGoodId  String?
-  finishedGood    FinishedGood? @relation("POFinishedGood", fields: [finishedGoodId], references: [id], onDelete: SetNull)
+  finishedGood    FinishedGood? @relation("POFinishedGood", fields: [finishedGoodId], references: [id], onDelete: Cascade)
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  rawMaterial     RawMaterial?  @relation("PORawMaterial", fields: [rawMaterialId], references: [id], onDelete: SetNull)
+  rawMaterial     RawMaterial?  @relation("PORawMaterial", fields: [rawMaterialId], references: [id], onDelete: Cascade)
 
   @@map("purchase_order_items")
 }
@@ -206,9 +206,9 @@ model ReceivingRecord {
   userId          String
   rawMaterialId   String?
   finishedGoodId  String?
-  finishedGood    FinishedGood? @relation("ReceivingFinishedGood", fields: [finishedGoodId], references: [id], onDelete: SetNull)
+  finishedGood    FinishedGood? @relation("ReceivingFinishedGood", fields: [finishedGoodId], references: [id], onDelete: Cascade)
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  rawMaterial     RawMaterial?  @relation("ReceivingRawMaterial", fields: [rawMaterialId], references: [id], onDelete: SetNull)
+  rawMaterial     RawMaterial?  @relation("ReceivingRawMaterial", fields: [rawMaterialId], references: [id], onDelete: Cascade)
   user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("receiving_records")
@@ -239,10 +239,10 @@ model InboundReceiptItem {
   locationId       String?
   rawMaterialId    String?
   finishedGoodId   String?
-  finishedGood     FinishedGood?  @relation("InboundFinishedGood", fields: [finishedGoodId], references: [id], onDelete: SetNull)
+  finishedGood     FinishedGood?  @relation("InboundFinishedGood", fields: [finishedGoodId], references: [id], onDelete: Cascade)
   inboundReceipt   InboundReceipt @relation(fields: [inboundReceiptId], references: [id], onDelete: Cascade)
   location         Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  rawMaterial      RawMaterial?   @relation("InboundRawMaterial", fields: [rawMaterialId], references: [id], onDelete: SetNull)
+  rawMaterial      RawMaterial?   @relation("InboundRawMaterial", fields: [rawMaterialId], references: [id], onDelete: Cascade)
 
   @@map("inbound_receipt_items")
 }
@@ -277,8 +277,8 @@ model SalesOrderItem {
   salesOrderId   String
   finishedGoodId String?
   rawMaterialId  String?
-  finishedGood   FinishedGood? @relation(fields: [finishedGoodId], references: [id], onDelete: SetNull)
-  rawMaterial    RawMaterial?  @relation(fields: [rawMaterialId], references: [id], onDelete: SetNull)
+  finishedGood   FinishedGood? @relation(fields: [finishedGoodId], references: [id], onDelete: Cascade)
+  rawMaterial    RawMaterial?  @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
   salesOrder     SalesOrder    @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
 
   @@map("sales_order_items")
@@ -310,10 +310,10 @@ model OutboundShipmentItem {
   locationId         String?
   rawMaterialId      String?
   finishedGoodId     String?
-  finishedGood       FinishedGood?    @relation("OutboundFinishedGood", fields: [finishedGoodId], references: [id], onDelete: SetNull)
+  finishedGood       FinishedGood?    @relation("OutboundFinishedGood", fields: [finishedGoodId], references: [id], onDelete: Cascade)
   location           Location?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
   outboundShipment   OutboundShipment @relation(fields: [outboundShipmentId], references: [id], onDelete: Cascade)
-  rawMaterial        RawMaterial?     @relation("OutboundRawMaterial", fields: [rawMaterialId], references: [id], onDelete: SetNull)
+  rawMaterial        RawMaterial?     @relation("OutboundRawMaterial", fields: [rawMaterialId], references: [id], onDelete: Cascade)
 
   @@map("outbound_shipment_items")
 }
@@ -331,7 +331,7 @@ model ProductionOrder {
   updatedAt        DateTime         @updatedAt
   finishedGoodId   String
   items            ProductionItem[]
-  finishedGood     FinishedGood     @relation(fields: [finishedGoodId], references: [id], onDelete: Restrict)
+  finishedGood     FinishedGood     @relation(fields: [finishedGoodId], references: [id], onDelete: Cascade)
 
   @@map("production_orders")
 }
@@ -343,7 +343,7 @@ model ProductionItem {
   productionOrderId String
   rawMaterialId     String
   productionOrder   ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
-  rawMaterial       RawMaterial     @relation(fields: [rawMaterialId], references: [id], onDelete: Restrict)
+  rawMaterial       RawMaterial     @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
 
   @@map("production_items")
 }
@@ -359,8 +359,8 @@ model InventoryAdjustment {
   userId         String
   rawMaterialId  String?
   finishedGoodId String?
-  finishedGood   FinishedGood?  @relation(fields: [finishedGoodId], references: [id], onDelete: SetNull)
-  rawMaterial    RawMaterial?   @relation(fields: [rawMaterialId], references: [id], onDelete: SetNull)
+  finishedGood   FinishedGood?  @relation(fields: [finishedGoodId], references: [id], onDelete: Cascade)
+  rawMaterial    RawMaterial?   @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
   user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@map("inventory_adjustments")
@@ -434,7 +434,7 @@ model InventoryOrder {
   notes          String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
-  finishedGood   FinishedGood         @relation("InventoryOrders", fields: [finishedGoodId], references: [id], onDelete: Restrict)
+  finishedGood   FinishedGood         @relation("InventoryOrders", fields: [finishedGoodId], references: [id], onDelete: Cascade)
 
   @@map("inventory_orders")
 }
@@ -471,8 +471,8 @@ model ReturnItem {
   notes          String?
   createdAt      DateTime             @default(now())
   return         Return               @relation(fields: [returnId], references: [id], onDelete: Cascade)
-  rawMaterial    RawMaterial?         @relation("ReturnItemRawMaterial", fields: [rawMaterialId], references: [id], onDelete: SetNull)
-  finishedGood   FinishedGood?        @relation("ReturnItemFinishedGood", fields: [finishedGoodId], references: [id], onDelete: SetNull)
+  rawMaterial    RawMaterial?         @relation("ReturnItemRawMaterial", fields: [rawMaterialId], references: [id], onDelete: Cascade)
+  finishedGood   FinishedGood?        @relation("ReturnItemFinishedGood", fields: [finishedGoodId], references: [id], onDelete: Cascade)
 
   @@map("return_items")
 }
@@ -518,7 +518,7 @@ model ProductBundleItem {
   quantity        Int           @default(1)
   
   bundle          ProductBundle @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  finishedGood    FinishedGood  @relation("BundleItemToFinishedGood", fields: [finishedGoodId], references: [id])
+  finishedGood    FinishedGood  @relation("BundleItemToFinishedGood", fields: [finishedGoodId], references: [id], onDelete: Cascade)
 
   @@unique([bundleId, finishedGoodId])
   @@map("product_bundle_items")

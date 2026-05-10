@@ -7,9 +7,9 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params
     const data = await request.json()
-    const { name, description, unit, cost, minimumStock, supplierId, locationId, receivedAs } = data
+    const { name, sku, description, unit, cost, minimumStock, supplierId, locationId, receivedAs } = data
 
-    if (!name || !unit || !supplierId || !locationId) {
+    if (!name || !sku || !unit || !supplierId || !locationId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -17,6 +17,7 @@ export async function PUT(request, { params }) {
       where: { id },
       data: {
         name,
+        sku,
         description,
         unit,
         cost: cost ? Number.parseFloat(cost) : 0,
@@ -34,6 +35,9 @@ export async function PUT(request, { params }) {
     return NextResponse.json(rawMaterial)
   } catch (error) {
     console.error("Error updating raw material:", error)
+    if (error.code === "P2002") {
+      return NextResponse.json({ error: "SKU already exists" }, { status: 400 })
+    }
     return NextResponse.json({ error: "Failed to update raw material" }, { status: 500 })
   }
 }
@@ -41,22 +45,6 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = params
-
-    // Check if item is used in any orders or production
-    const purchaseOrderItems = await prisma.purchaseOrderItem.count({
-      where: { rawMaterialId: id },
-    })
-
-    const productionItems = await prisma.productionItem.count({
-      where: { rawMaterialId: id },
-    })
-
-    if (purchaseOrderItems > 0 || productionItems > 0) {
-      return NextResponse.json(
-        { error: "Cannot delete raw material that is used in orders or production" },
-        { status: 400 },
-      )
-    }
 
     await prisma.rawMaterial.delete({
       where: { id },

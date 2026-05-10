@@ -590,12 +590,12 @@ export default function Inventory() {
 
   // ── Delete ──────────────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this item?")) return
+    if (!confirm("WARNING: This will permanently delete this item and ALL associated data, including historical orders, inventory adjustments, and transaction logs. This action cannot be undone. Are you sure?")) return
     setDeletingItemId(id)
     try {
       const res = await fetch(`/api/inventory/${activeTab}/${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Failed to delete item")
-      toast({ title: "Success", description: "Item deleted successfully" })
+      toast({ title: "Success", description: "Item and all related records deleted successfully" })
       fetchData()
     } catch {
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" })
@@ -730,7 +730,7 @@ export default function Inventory() {
         break
 
       case "delete":
-        if (!confirm(`Delete ${selectedItems.length} item${selectedItems.length !== 1 ? "s" : ""}? This cannot be undone.`)) return
+        if (!confirm(`CRITICAL WARNING: You are about to delete ${selectedItems.length} item${selectedItems.length !== 1 ? "s" : ""}. This will PERMANENTLY delete all historical data, orders, and logs associated with these items. This cannot be undone. Proceed?`)) return
         setBulkLoadingAction("delete")
         try {
           await fetch(`/api/inventory/${activeTab}`, {
