@@ -1583,7 +1583,7 @@ export default function Settings() {
   }
 
   const sections = [
-    // { id: "general", label: "General" },
+    { id: "general", label: "General" },
     { id: "users", label: "Users" },
     { id: "locations", label: "Locations" },
     { id: "suppliers", label: "Suppliers" },
