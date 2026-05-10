@@ -644,3 +644,14 @@ enum ItemReceivedAs {
   RAW
   FINISHED
 }
+model SkuMapping {
+  id          String   @id @default(cuid())
+  externalSku String   @unique
+  internalSku String
+  platform    String?  // e.g. "SHOPIFY", "DARAZ"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("sku_mappings")
+}
