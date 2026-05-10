@@ -47,10 +47,8 @@ async function handleReplenish(request) {
     // higher than the currently stored minimum (never reduces the floor).
 
     const SMART_TARGET_DAYS = 9   // safety stock buffer in days
-    const RECENT_DAYS = 5         // short window for current velocity
+    const RECENT_DAYS = 3         // short window for current velocity
     const TREND_DAYS = 30         // longer window for trend baseline
-    const TREND_MIN = 0.8         // clamp: don't go below 80% of trend
-    const TREND_MAX = 1.5         // clamp: don't go above 150% of trend
 
     const now = new Date()
     const recentStart = subDays(now, RECENT_DAYS)
@@ -100,29 +98,25 @@ async function handleReplenish(request) {
 
     for (const item of finishedGoods) {
       const recentTotal = recentMap.get(item.id) || 0
-
-      // If zero sales in last 5 days, skip — leave existing minimum untouched
-      if (recentTotal === 0) continue
-
       const recentDailyAvg = recentTotal / RECENT_DAYS
 
-      // Trend multiplier: compare recent pace vs 30-day rolling average
-      const trendTotal    = trendMap.get(item.id) || 0
+      const trendTotal = trendMap.get(item.id) || 0
       const trendDailyAvg = trendTotal / TREND_DAYS
 
-      let trendMultiplier = 1.0
-      if (trendDailyAvg > 0) {
-        trendMultiplier = Math.min(
-          Math.max(recentDailyAvg / trendDailyAvg, TREND_MIN),
-          TREND_MAX
-        )
+      // Asymmetrical Smoothing: 
+      // If spiking, react quickly to prevent outages (70% recent, 30% trend)
+      // If dropping, react slowly to prevent over-stocking while filtering anomalies like weekends (30% recent, 70% trend)
+      let smartDailyAvg = 0
+      if (recentDailyAvg > trendDailyAvg) {
+        smartDailyAvg = (recentDailyAvg * 0.7) + (trendDailyAvg * 0.3)
+      } else {
+        smartDailyAvg = (recentDailyAvg * 0.3) + (trendDailyAvg * 0.7)
       }
 
-      const smartDailyAvg = recentDailyAvg * trendMultiplier
       const smartMinStock = Math.ceil(smartDailyAvg * SMART_TARGET_DAYS)
 
-      // Only raise the floor, never lower it
-      if (smartMinStock > (item.minimumStock || 0)) {
+      // Allow the floor to lower or rise dynamically to prevent permanent overstocking
+      if (smartMinStock !== (item.minimumStock || 0)) {
         minStockUpdates.push({
           id: item.id,
           newMin: smartMinStock,
