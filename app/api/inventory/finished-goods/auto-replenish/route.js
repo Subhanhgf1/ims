@@ -272,8 +272,17 @@ async function handleReplenish(request) {
 
     const itemsToLiquidate = finishedGoods
       .map((item) => {
-        const maxLevel = item.inventorySettings?.maxStockLevel
-        if (!maxLevel || maxLevel <= 0) return null
+        // Use explicit maxStockLevel from settings if available
+        let maxLevel = item.inventorySettings?.maxStockLevel
+        
+        // Fallback: If no explicit max stock is set, use 1.5x the current minimumStock (safety floor)
+        // This makes the system reactive to items that have high stock but zero/low sales velocity.
+        if (!maxLevel || maxLevel <= 0) {
+          maxLevel = (item.minimumStock || 0) * 1.5
+        }
+        
+        // Ensure we have a valid max level and we are actually above it
+        if (maxLevel < 0) return null
         
         const excess = item.quantity - maxLevel
         if (excess <= 0) return null
@@ -282,8 +291,8 @@ async function handleReplenish(request) {
           id: item.id,
           name: item.name,
           sku: item.sku,
-          quantity: excess,
-          unitPrice: item.price,
+          quantity: Math.floor(excess),
+          unitPrice: item.price || 0,
         }
       })
       .filter(Boolean)
