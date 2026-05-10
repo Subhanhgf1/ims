@@ -37,81 +37,82 @@ export async function POST(request, { params }) {
       )
     }
 
-    const shippedSummary = []
-    const itemUpdates = []
-    const finishedGoodUpdates = []
-    const rawMaterialUpdates = []
-    const adjustments = []
-
-    for (const shippedItem of items) {
-      const orderItem = salesOrder.items.find((i) => i.id === shippedItem.itemId)
-      if (!orderItem) continue
-
-      const shippedQty = Number.parseInt(shippedItem.shippedQuantity)
-      if (!shippedQty || shippedQty <= 0) continue
-
-      const newShippedTotal = (orderItem.shipped || 0) + shippedQty
-
-      // Update shipped quantity
-      itemUpdates.push(
-        prisma.salesOrderItem.update({
-          where: { id: shippedItem.itemId },
-          data: { shipped: { increment: shippedQty } },
-        })
-      )
-
-      // Deduct inventory
-      if (orderItem.finishedGoodId) {
-        finishedGoodUpdates.push(
-          prisma.finishedGood.update({
-            where: { id: orderItem.finishedGoodId },
-            data: { quantity: { decrement: shippedQty } },
-          })
-        )
-      } else if (orderItem.rawMaterialId) {
-        rawMaterialUpdates.push(
-          prisma.rawMaterial.update({
-            where: { id: orderItem.rawMaterialId },
-            data: { quantity: { decrement: shippedQty } },
-          })
-        )
-      }
-
-      // Inventory adjustment log
-      const adjustment = {
-        type: "DECREASE",
-        quantity: -shippedQty,
-        reason: `Sales order ${salesOrder.soNumber} shipped`,
-        reference: salesOrder.soNumber,
-        userId,
-      }
-
-      if (orderItem.finishedGoodId) {
-        adjustment.finishedGoodId = orderItem.finishedGoodId
-      } else if (orderItem.rawMaterialId) {
-        adjustment.rawMaterialId = orderItem.rawMaterialId
-      }
-
-      adjustments.push(adjustment)
-
-      // Build summary
-      const itemName =
-        orderItem.finishedGood?.name ?? orderItem.rawMaterial?.name ?? "Unknown Item"
-
-      const itemSku =
-        orderItem.finishedGood?.sku ?? orderItem.rawMaterial?.sku ?? ""
-
-      shippedSummary.push({
-        name: itemName,
-        sku: itemSku,
-        qty: shippedQty,
-        ordered: orderItem.quantity,
-        totalShipped: newShippedTotal,
-      })
-    }
-
     // Transaction
     const result = await prisma.$transaction(async (tx) => {
+      const shippedSummary = []
+      const itemUpdates = []
+      const finishedGoodUpdates = []
+      const rawMaterialUpdates = []
+      const adjustments = []
+
+      for (const shippedItem of items) {
+        const orderItem = salesOrder.items.find((i) => i.id === shippedItem.itemId)
+        if (!orderItem) continue
+
+        const shippedQty = Number.parseInt(shippedItem.shippedQuantity)
+        if (!shippedQty || shippedQty <= 0) continue
+
+        const newShippedTotal = (orderItem.shipped || 0) + shippedQty
+
+        // Update shipped quantity
+        itemUpdates.push(
+          tx.salesOrderItem.update({
+            where: { id: shippedItem.itemId },
+            data: { shipped: { increment: shippedQty } },
+          })
+        )
+
+        // Deduct inventory
+        if (orderItem.finishedGoodId) {
+          finishedGoodUpdates.push(
+            tx.finishedGood.update({
+              where: { id: orderItem.finishedGoodId },
+              data: { quantity: { decrement: shippedQty } },
+            })
+          )
+        } else if (orderItem.rawMaterialId) {
+          rawMaterialUpdates.push(
+            tx.rawMaterial.update({
+              where: { id: orderItem.rawMaterialId },
+              data: { quantity: { decrement: shippedQty } },
+            })
+          )
+        }
+
+        // Inventory adjustment log
+        const adjustment = {
+          type: "DECREASE",
+          quantity: -shippedQty,
+          reason: `Sales order ${salesOrder.soNumber} shipped`,
+          reference: salesOrder.soNumber,
+          userId,
+        }
+
+        if (orderItem.finishedGoodId) {
+          adjustment.finishedGoodId = orderItem.finishedGoodId
+        } else if (orderItem.rawMaterialId) {
+          adjustment.rawMaterialId = orderItem.rawMaterialId
+        }
+
+        adjustments.push(adjustment)
+
+        // Build summary
+        const itemName =
+          orderItem.finishedGood?.name ?? orderItem.rawMaterial?.name ?? "Unknown Item"
+
+        const itemSku =
+          orderItem.finishedGood?.sku ?? orderItem.rawMaterial?.sku ?? ""
+
+        shippedSummary.push({
+          name: itemName,
+          sku: itemSku,
+          qty: shippedQty,
+          ordered: orderItem.quantity,
+          totalShipped: newShippedTotal,
+        })
+      }
+
+      // Execute all updates in batch
       await Promise.all([
         ...itemUpdates,
         ...finishedGoodUpdates,

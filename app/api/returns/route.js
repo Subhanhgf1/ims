@@ -157,7 +157,8 @@ export async function POST(request) {
       // 1. Pre-process items to determine types and handle bundle explosion
       // We use flatMap because one bundle item can explode into multiple component items
       const processedItems = []
-      
+      const adjustments = []
+
       for (const item of items) {
         const quantity = Number(item.quantity)
         
@@ -182,6 +183,14 @@ export async function POST(request) {
             itemType: 'raw_material',
             rawMaterialId: item.imsItemId
           })
+          adjustments.push({
+            type: "INCREASE",
+            quantity,
+            reason: `Return processed - Order ${orderNumber} (${item.condition})`,
+            reference: orderNumber,
+            userId: createdById,
+            rawMaterialId: item.imsItemId
+          })
           continue
         }
 
@@ -203,6 +212,14 @@ export async function POST(request) {
             condition: item.condition,
             notes: item.notes,
             itemType: 'finished_good',
+            finishedGoodId: item.imsItemId
+          })
+          adjustments.push({
+            type: "INCREASE",
+            quantity,
+            reason: `Return processed - Order ${orderNumber} (${item.condition})`,
+            reference: orderNumber,
+            userId: createdById,
             finishedGoodId: item.imsItemId
           })
           continue
@@ -237,9 +254,21 @@ export async function POST(request) {
               itemType: 'finished_good',
               finishedGoodId: bundleItem.finishedGoodId
             })
+            adjustments.push({
+              type: "INCREASE",
+              quantity: componentQty,
+              reason: `Return processed (Bundle component) - Order ${orderNumber} (${item.condition})`,
+              reference: orderNumber,
+              userId: createdById,
+              finishedGoodId: bundleItem.finishedGoodId
+            })
           }
           continue
         }
+      }
+
+      if (adjustments.length > 0) {
+        await tx.inventoryAdjustment.createMany({ data: adjustments })
       }
 
       // 3. Create the return record with its items

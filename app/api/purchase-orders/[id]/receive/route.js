@@ -95,6 +95,7 @@ export async function POST(request, { params }) {
       const receivingData = []
       const inventoryOps = []
       const receivedSummary = []
+      const adjustments = []
 
       for (const receivedItem of items) {
         const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId)
@@ -139,6 +140,17 @@ export async function POST(request, { params }) {
           totalReceived: newReceivedTotal,
         })
 
+        const adjustment = {
+          type: "INCREASE",
+          quantity: receivedQuantity,
+          reason: `Purchase order received - ${purchaseOrder.poNumber}`,
+          reference: purchaseOrder.poNumber,
+          userId,
+          rawMaterialId: poItem.rawMaterialId,
+          finishedGoodId: poItem.finishedGoodId,
+        }
+        adjustments.push(adjustment)
+
         if (poItem.rawMaterialId) {
           inventoryOps.push(
             tx.rawMaterial.update({
@@ -161,6 +173,9 @@ export async function POST(request, { params }) {
         ...inventoryOps,
         receivingData.length > 0
           ? tx.receivingRecord.createMany({ data: receivingData })
+          : Promise.resolve(),
+        adjustments.length > 0
+          ? tx.inventoryAdjustment.createMany({ data: adjustments })
           : Promise.resolve(),
       ])
 

@@ -34,62 +34,73 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Receipt already processed" }, { status: 400 })
     }
 
-    // Process each item
-    for (const processItem of items) {
-      const receiptItem = receipt.items.find((item) => item.id === processItem.itemId)
-      if (!receiptItem) continue
+    // Process items in a batched transaction
+    await prisma.$transaction(async (tx) => {
+      const inventoryUpdates = []
+      const adjustments = []
 
-      const processedQuantity = Number.parseInt(processItem.processedQuantity) || 0
-      if (processedQuantity <= 0) continue
+      for (const processItem of items) {
+        const receiptItem = receipt.items.find((item) => item.id === processItem.itemId)
+        if (!receiptItem) continue
 
-      // Update inventory
-      if (receiptItem.itemType === "raw_material" && receiptItem.rawMaterial) {
-        await prisma.rawMaterial.update({
-          where: { id: receiptItem.rawMaterial.id },
-          data: {
-            quantity: { increment: processedQuantity },
-            locationId: processItem.locationId || receiptItem.rawMaterial.locationId,
-          },
-        })
+        const processedQuantity = Number.parseInt(processItem.processedQuantity) || 0
+        if (processedQuantity <= 0) continue
 
-        // Create inventory adjustment record
-        await prisma.inventoryAdjustment.create({
-          data: {
+        // Update inventory
+        if (receiptItem.itemType === "raw_material" && receiptItem.rawMaterial) {
+          inventoryUpdates.push(
+            tx.rawMaterial.update({
+              where: { id: receiptItem.rawMaterial.id },
+              data: {
+                quantity: { increment: processedQuantity },
+                locationId: processItem.locationId || receiptItem.rawMaterial.locationId,
+              },
+            })
+          )
+
+          // Prepare inventory adjustment record
+          adjustments.push({
             type: "INCREASE",
             quantity: processedQuantity,
             reason: `Inbound receipt processing - ${receipt.receiptNumber}`,
             reference: receipt.receiptNumber,
             userId,
             rawMaterialId: receiptItem.rawMaterial.id,
-          },
-        })
-      } else if (receiptItem.itemType === "finished_good" && receiptItem.finishedGood) {
-        await prisma.finishedGood.update({
-          where: { id: receiptItem.finishedGood.id },
-          data: {
-            quantity: { increment: processedQuantity },
-            locationId: processItem.locationId || receiptItem.finishedGood.locationId,
-          },
-        })
+          })
+        } else if (receiptItem.itemType === "finished_good" && receiptItem.finishedGood) {
+          inventoryUpdates.push(
+            tx.finishedGood.update({
+              where: { id: receiptItem.finishedGood.id },
+              data: {
+                quantity: { increment: processedQuantity },
+                locationId: processItem.locationId || receiptItem.finishedGood.locationId,
+              },
+            })
+          )
 
-        // Create inventory adjustment record
-        await prisma.inventoryAdjustment.create({
-          data: {
+          // Prepare inventory adjustment record
+          adjustments.push({
             type: "INCREASE",
             quantity: processedQuantity,
             reason: `Inbound receipt processing - ${receipt.receiptNumber}`,
             reference: receipt.receiptNumber,
             userId,
             finishedGoodId: receiptItem.finishedGood.id,
-          },
-        })
+          })
+        }
       }
-    }
 
-    // Update receipt status
-    await prisma.inboundReceipt.update({
-      where: { id },
-      data: { status: "PROCESSED" },
+      // Execute all updates in batch
+      await Promise.all([
+        ...inventoryUpdates,
+        adjustments.length > 0 ? tx.inventoryAdjustment.createMany({ data: adjustments }) : Promise.resolve(),
+      ])
+
+      // Update receipt status
+      await tx.inboundReceipt.update({
+        where: { id },
+        data: { status: "PROCESSED" },
+      })
     })
 
     return NextResponse.json({ message: "Receipt processed successfully" })

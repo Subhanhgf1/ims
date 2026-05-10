@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { generatePONumber } from "@/lib/utils"
-import { addDays, startOfDay } from "date-fns"
+import { addDays, startOfDay, subDays } from "date-fns"
 
 export const dynamic = "force-dynamic"
 
@@ -40,7 +40,53 @@ async function handleReplenish(request) {
     const DEFAULT_SUPPLIER_ID = "cmn26uk860002vsxwyufhrdry"
     const RAW_CAPACITY = 400
 
-    // 1. Fetch all finished goods that are NOT in the excluded category
+    // ── PHASE 1: Smart Minimum Stock Recalculation ──────────────────────────
+    // Before creating any orders, recompute each item's minimumStock using
+    // recent sales velocity (last 5 days) adjusted by a 30-day trend multiplier.
+    // Target: 9 days of safety stock. New value is persisted only if it is
+    // higher than the currently stored minimum (never reduces the floor).
+
+    const SMART_TARGET_DAYS = 9   // safety stock buffer in days
+    const RECENT_DAYS = 5         // short window for current velocity
+    const TREND_DAYS = 30         // longer window for trend baseline
+    const TREND_MIN = 0.8         // clamp: don't go below 80% of trend
+    const TREND_MAX = 1.5         // clamp: don't go above 150% of trend
+
+    const now = new Date()
+    const recentStart = subDays(now, RECENT_DAYS)
+    const trendStart  = subDays(now, TREND_DAYS)
+
+    // Fetch shipped quantities for all finished goods in both windows in parallel
+    const [recentSales, trendSales] = await Promise.all([
+      prisma.salesOrderItem.groupBy({
+        by: ["finishedGoodId"],
+        where: {
+          finishedGoodId: { not: null },
+          salesOrder: {
+            status: { in: ["SHIPPED", "DELIVERED"] },
+            updatedAt: { gte: recentStart },
+          },
+        },
+        _sum: { shipped: true },
+      }),
+      prisma.salesOrderItem.groupBy({
+        by: ["finishedGoodId"],
+        where: {
+          finishedGoodId: { not: null },
+          salesOrder: {
+            status: { in: ["SHIPPED", "DELIVERED"] },
+            updatedAt: { gte: trendStart },
+          },
+        },
+        _sum: { shipped: true },
+      }),
+    ])
+
+    const recentMap = new Map(recentSales.map(s => [s.finishedGoodId, s._sum.shipped || 0]))
+    const trendMap  = new Map(trendSales.map(s  => [s.finishedGoodId, s._sum.shipped || 0]))
+
+    // ── PHASE 2: Fetch all finished goods (excluding the excluded category) ──
+
     const finishedGoods = await prisma.finishedGood.findMany({
       where: {
         NOT: {
@@ -49,7 +95,69 @@ async function handleReplenish(request) {
       },
     })
 
-    // 2. Fetch pending inbound quantities (PO items not yet received)
+    // Build per-item smart min stock and collect DB updates
+    const minStockUpdates = [] // { id, newMin, newDailyAvg }
+
+    for (const item of finishedGoods) {
+      const recentTotal = recentMap.get(item.id) || 0
+
+      // If zero sales in last 5 days, skip — leave existing minimum untouched
+      if (recentTotal === 0) continue
+
+      const recentDailyAvg = recentTotal / RECENT_DAYS
+
+      // Trend multiplier: compare recent pace vs 30-day rolling average
+      const trendTotal    = trendMap.get(item.id) || 0
+      const trendDailyAvg = trendTotal / TREND_DAYS
+
+      let trendMultiplier = 1.0
+      if (trendDailyAvg > 0) {
+        trendMultiplier = Math.min(
+          Math.max(recentDailyAvg / trendDailyAvg, TREND_MIN),
+          TREND_MAX
+        )
+      }
+
+      const smartDailyAvg = recentDailyAvg * trendMultiplier
+      const smartMinStock = Math.ceil(smartDailyAvg * SMART_TARGET_DAYS)
+
+      // Only raise the floor, never lower it
+      if (smartMinStock > (item.minimumStock || 0)) {
+        minStockUpdates.push({
+          id: item.id,
+          newMin: smartMinStock,
+          newDailyAvg: smartDailyAvg,
+        })
+      }
+    }
+
+    // Persist updated minimums to DB
+    if (minStockUpdates.length > 0) {
+      await Promise.all(
+        minStockUpdates.map(({ id, newMin, newDailyAvg }) =>
+          prisma.finishedGood.update({
+            where: { id },
+            data: {
+              minimumStock:     newMin,
+              dailyConsumption: parseFloat(newDailyAvg.toFixed(4)),
+            },
+          })
+        )
+      )
+
+      // Mirror the new values into the in-memory list so ordering uses them
+      const updateMap = new Map(minStockUpdates.map(u => [u.id, u]))
+      for (const item of finishedGoods) {
+        const upd = updateMap.get(item.id)
+        if (upd) {
+          item.minimumStock     = upd.newMin
+          item.dailyConsumption = upd.newDailyAvg
+        }
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    // 3. Fetch pending inbound quantities (PO items not yet received)
     const pendingPOItems = await prisma.purchaseOrderItem.findMany({
       where: {
         itemType: "finished_good",
@@ -72,7 +180,7 @@ async function handleReplenish(request) {
       return acc
     }, {})
 
-    // 3. Identify items that need replenishment
+    // 4. Identify items that need replenishment (using freshly updated minimums)
     const itemsToRestock = finishedGoods
       .map((item) => {
         const pendingInbound = pendingQuantities[item.id] || 0
@@ -108,10 +216,11 @@ async function handleReplenish(request) {
       return NextResponse.json({
         message: "Inventory is healthy. No replenishment needed.",
         ordersCreated: 0,
+        smartMinUpdates: minStockUpdates.length,
       })
     }
 
-    // 3. Group by receivedAs and create separate orders
+    // 5. Group by receivedAs and create separate orders
     const groups = itemsToRestock.reduce((acc, item) => {
       if (!acc[item.receivedAs]) acc[item.receivedAs] = []
       acc[item.receivedAs].push(item)
@@ -160,10 +269,11 @@ async function handleReplenish(request) {
 
     return NextResponse.json({
       message: "Smart replenishment complete",
+      smartMinUpdates: minStockUpdates.length,
       orders: createdOrders,
       totalValue: createdOrders.reduce((sum, o) => sum + o.totalValue, 0),
     })
-    } catch (error) {
+  } catch (error) {
     console.error("Error in auto-replenish:", error)
     return NextResponse.json({ error: "Failed to run auto-replenishment" }, { status: 500 })
   }
