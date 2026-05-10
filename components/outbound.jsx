@@ -943,6 +943,10 @@ const generateShippingReport = async (orderId) => {
                         <Label className="text-xs">Quantity</Label>
                         <Input
                           type="number"
+                        
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault();
+                          }}
                           value={item.quantity}
                           onChange={(e) => updateSOItem(index, "quantity", e.target.value)}
                           className="h-8 text-xs"
@@ -1097,6 +1101,10 @@ const generateShippingReport = async (orderId) => {
                         <Label className="text-xs">Quantity</Label>
                         <Input
                           type="number"
+                          
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault();
+                          }}
                           value={item.quantity}
                           onChange={(e) => updateSOItem(index, "quantity", e.target.value)}
                           className="h-8 text-xs"
@@ -1237,6 +1245,10 @@ const generateShippingReport = async (orderId) => {
                         <Label className="text-xs">Quantity</Label>
                         <Input
                           type="number"
+                          min="0"
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault();
+                          }}
                           value={item.quantity}
                           onChange={(e) => updateShipmentItem(index, "quantity", e.target.value)}
                           className="h-8 text-xs"
@@ -1304,6 +1316,10 @@ const generateShippingReport = async (orderId) => {
                     <Label className="text-xs">Process Quantity</Label>
                     <Input
                       type="number"
+                      min="0"
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                       value={processData[index]?.processedQuantity || ""}
                       onChange={(e) =>
                         setProcessData((prev) =>

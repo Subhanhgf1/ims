@@ -92,10 +92,11 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
 
   const handleAdjustment = async (e) => {
     e.preventDefault()
-    if (!adjustmentData.type || !adjustmentData.quantity || !adjustmentData.reason) {
+    const qty = Number.parseInt(adjustmentData.quantity)
+    if (qty <= 0) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Quantity must be greater than zero",
         variant: "destructive",
       })
       return
@@ -109,7 +110,7 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
         body: JSON.stringify({
           ...adjustmentData,
           userId: user.id,
-          quantity: Math.abs(Number.parseInt(adjustmentData.quantity)),
+          quantity: qty,
         }),
       })
 
@@ -459,6 +460,10 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
                         <Input
                           id="quantity"
                           type="number"
+                          min="0"
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault();
+                          }}
                           value={adjustmentData.quantity}
                           onChange={(e) => setAdjustmentData({ ...adjustmentData, quantity: e.target.value })}
                           placeholder="Enter quantity"

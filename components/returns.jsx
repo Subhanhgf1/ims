@@ -1373,6 +1373,10 @@ export default function Returns() {
                       <Label className="text-xs">Return Quantity</Label>
                       <Input
                         type="number"
+                      
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e') e.preventDefault();
+                        }}
                         min={1}
                         max={mapping.orderItemQty}
                         value={mapping.quantity}

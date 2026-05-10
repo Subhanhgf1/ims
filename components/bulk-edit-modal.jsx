@@ -59,6 +59,9 @@ function FieldInput({ field, value, onChange, locations, categories }) {
         type="number"
         step={step}
         min="0"
+        onKeyDown={(e) => {
+          if (e.key === '-' || e.key === 'e') e.preventDefault();
+        }}
         className={`h-8 text-xs ${key === "price" || key === "cost" ? "pl-7" : ""}`}
         value={value}
         placeholder="—"
@@ -358,6 +361,9 @@ export default function BulkEditModal({
                                 type="number"
                                 step={step}
                                 min="0"
+                                onKeyDown={(e) => {
+                                  if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                }}
                                 className={`h-8 text-xs ${key === "price" || key === "cost" ? "pl-6" : ""}`}
                                 value={globalFields[key]}
                                 placeholder="—"
@@ -565,13 +571,16 @@ export default function BulkEditModal({
                         {/* Qty */}
                         <div className="lg:col-span-1">
                           <Label className="text-[10px] text-muted-foreground uppercase tracking-wide lg:hidden">Quantity</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            className="h-8 text-xs mt-0.5"
-                            value={adj.quantity}
-                            onChange={e => updateAdjustment(adj.id, "quantity", e.target.value)}
-                          />
+                            <Input
+                              type="number"
+                              min="0"
+                              onKeyDown={(e) => {
+                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                              }}
+                              className="h-8 text-xs mt-0.5"
+                              value={adj.quantity}
+                              onChange={e => updateAdjustment(adj.id, "quantity", e.target.value)}
+                            />
                         </div>
 
                         {/* New qty preview */}

@@ -891,6 +891,9 @@ export default function Inbound() {
                         <RequiredLabel className="text-xs font-medium" required>Quantity</RequiredLabel>
                         <Input
                           type="number"
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault();
+                          }}
                           value={item.quantity}
                           onChange={(e) => updatePOItem(index, "quantity", e.target.value)}
                           className={`h-9 text-xs border-gray-300 ${item.received > 0 && Number(item.quantity) < item.received ? "border-red-500" : ""}`}
@@ -1045,6 +1048,10 @@ export default function Inbound() {
       </RequiredLabel>
       <Input
         type="number"
+       
+        onKeyDown={(e) => {
+          if (e.key === '-' || e.key === 'e') e.preventDefault();
+        }}
         value={item.quantity}
         onChange={(e) => updatePOItem(index, "quantity", e.target.value)}
         className="h-9 text-xs border-gray-300"
@@ -1184,6 +1191,10 @@ export default function Inbound() {
                         </RequiredLabel>
                         <Input
                           type="number"
+                          min="0"
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault();
+                          }}
                           value={item.quantity}
                           onChange={(e) => updateReceiptItem(index, "quantity", e.target.value)}
                           className="h-9 text-xs border-gray-300"
@@ -1292,6 +1303,10 @@ export default function Inbound() {
                       </RequiredLabel>
                       <Input
                         type="number"
+                        min="0"
+                        onKeyDown={(e) => {
+                          if (e.key === '-' || e.key === 'e') e.preventDefault();
+                        }}
                         value={receiveData[index]?.receivedQuantity || ""}
                         onChange={(e) =>
                           setReceiveData((prev) =>
@@ -1299,7 +1314,6 @@ export default function Inbound() {
                           )
                         }
                         max={remaining}
-                        min="0"
                         className="h-9 border-gray-300"
                         placeholder={`Max: ${remaining}`}
                       />

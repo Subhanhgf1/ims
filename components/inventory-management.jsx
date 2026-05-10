@@ -278,6 +278,10 @@ export default function InventoryManagement() {
                     <Input
                       id="reorder-point"
                       type="number"
+                      min="0"
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                       placeholder="Min stock level"
                       value={settingsFormData.reorderPoint}
                       onChange={(e) =>
@@ -291,6 +295,10 @@ export default function InventoryManagement() {
                     <Input
                       id="reorder-qty"
                       type="number"
+                      min="0"
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                       placeholder="Order quantity"
                       value={settingsFormData.reorderQuantity}
                       onChange={(e) =>
@@ -306,6 +314,10 @@ export default function InventoryManagement() {
                     <Input
                       id="max-stock"
                       type="number"
+                      min="0"
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                       placeholder="Maximum stock"
                       value={settingsFormData.maxStockLevel}
                       onChange={(e) =>
@@ -371,6 +383,10 @@ export default function InventoryManagement() {
                   <Input
                     id="order-qty"
                     type="number"
+                    min="0"
+                    onKeyDown={(e) => {
+                      if (e.key === '-' || e.key === 'e') e.preventDefault();
+                    }}
                     placeholder="0"
                     value={orderFormData.quantity}
                     onChange={(e) =>

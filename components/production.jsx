@@ -282,6 +282,10 @@ export default function Production() {
                     <Input
                       id="target-quantity"
                       type="number"
+                      min="0"
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                      }}
                       value={formData.targetQuantity}
                       onChange={(e) => setFormData((prev) => ({ ...prev, targetQuantity: e.target.value }))}
                       placeholder="Enter quantity"
@@ -311,6 +315,10 @@ export default function Production() {
                         </Select>
                         <Input
                           type="number"
+                          min="0"
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault();
+                          }}
                           placeholder="Quantity needed"
                           value={item.requiredQuantity}
                           onChange={(e) => updateRawMaterial(index, "requiredQuantity", e.target.value)}
@@ -503,6 +511,10 @@ export default function Production() {
                 <Input
                   id="produced-quantity"
                   type="number"
+                  min="0"
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e') e.preventDefault();
+                  }}
                   value={producedQuantity}
                   onChange={(e) => setProducedQuantity(e.target.value)}
                   placeholder={`Max: ${selectedOrder?.targetQuantity}`}
