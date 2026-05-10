@@ -16,15 +16,15 @@ export async function PUT(request, { params }) {
     const rawMaterial = await prisma.rawMaterial.update({
       where: { id },
       data: {
-        name,
+        name: name?.trim(),
         sku,
         description,
         unit,
         cost: cost ? Number.parseFloat(cost) : 0,
         minimumStock: minimumStock ? Number.parseInt(minimumStock) : 0,
-        supplierId,
-        locationId,
-        receivedAs,
+        supplierId: supplierId || null,
+        locationId: locationId || null,
+        receivedAs: receivedAs || "RAW",
       },
       include: {
         supplier: { select: { name: true } },

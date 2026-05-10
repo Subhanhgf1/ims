@@ -39,17 +39,17 @@ export async function PUT(request, { params }) {
     const finishedGood = await prisma.finishedGood.update({
       where: { id },
       data: {
-        name,
+        name: name?.trim(),
         sku,
         description,
         unit,
-        cost: Number.parseFloat(cost),
-        price: Number.parseFloat(price),
-        minimumStock: Number.parseInt(minimumStock),
-        locationId,
+        cost: Number.parseFloat(cost) || 0,
+        price: Number.parseFloat(price) || 0,
+        minimumStock: Number.parseInt(minimumStock) || 0,
+        locationId: locationId || null,
         imageUrl: imageUrl || null,
-        categoryId,
-        receivedAs,
+        categoryId: categoryId || null,
+        receivedAs: receivedAs || "FINISHED",
       },
       include: {
         location: {
