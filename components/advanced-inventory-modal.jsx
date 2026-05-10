@@ -11,10 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Package, TrendingUp, TrendingDown, History, MapPin, RotateCcw, Truck, Factory, X } from "lucide-react"
+import { Package, TrendingUp, TrendingDown, History, MapPin, RotateCcw, Truck, Factory, X, Calendar, Info, BarChart3 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth"
-import { format } from "date-fns"
+import { format, subDays, isSameDay } from "date-fns"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate, itemType }) {
   
@@ -108,7 +109,7 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
         body: JSON.stringify({
           ...adjustmentData,
           userId: user.id,
-          quantity: Number.parseInt(adjustmentData.quantity),
+          quantity: Math.abs(Number.parseInt(adjustmentData.quantity)),
         }),
       })
 
@@ -116,8 +117,6 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
         const error = await response.json()
         throw new Error(error.error || "Failed to adjust inventory")
       }
-
-      const result = await response.json()
 
       toast({
         title: "Success",
@@ -145,6 +144,30 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
     } finally {
       setLoading(false)
     }
+  }
+
+  // Generate chart data from history
+  const chartData = [...history.adjustments]
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .map(adj => ({
+      date: format(new Date(adj.createdAt), "MMM dd"),
+      stock: adj.balanceAfter,
+      timestamp: new Date(adj.createdAt).getTime()
+    }))
+
+  // Unified timeline
+  const timelineEvents = [
+    ...history.adjustments.map(a => ({ ...a, eventType: 'ADJUSTMENT', date: new Date(a.createdAt) })),
+    ...history.receiving.map(r => ({ ...r, eventType: 'RECEIVING', date: new Date(r.receivedDate || r.createdAt) })),
+    ...history.usage.map(u => ({ ...u, eventType: 'USAGE', date: new Date(u.salesOrder?.shipDate || u.createdAt) }))
+  ].sort((a, b) => b.date - a.date)
+
+  const getEstimatedStockout = () => {
+    if (!stats.totalUsed || stats.totalUsed === 0) return "N/A"
+    const dailyUsage = stats.totalUsed / 30
+    if (dailyUsage <= 0) return "Stable"
+    const daysLeft = Math.floor(item.quantity / dailyUsage)
+    return `${daysLeft} days`
   }
 
   const getStatusBadge = (quantity, minimumStock) => {
@@ -195,30 +218,107 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="md:col-span-3">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-blue-500" />
+                      Stock Level Trend
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[200px] w-full">
+                      {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chartData}>
+                            <defs>
+                              <linearGradient id="colorStock" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                            <XAxis 
+                              dataKey="date" 
+                              fontSize={10} 
+                              tickLine={false} 
+                              axisLine={false} 
+                            />
+                            <YAxis 
+                              fontSize={10} 
+                              tickLine={false} 
+                              axisLine={false}
+                              tickFormatter={(val) => `${val}`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="stock" 
+                              stroke="#3b82f6" 
+                              strokeWidth={2}
+                              fillOpacity={1} 
+                              fill="url(#colorStock)" 
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                          No stock movement history yet
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-blue-50/50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-blue-800 dark:text-blue-300">Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full justify-start gap-2 bg-white dark:bg-slate-950"
+                      onClick={() => setActiveTab("adjustments")}
+                    >
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      Adjust Stock
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full justify-start gap-2 bg-white dark:bg-slate-950"
+                      onClick={() => setActiveTab("history")}
+                    >
+                      <History className="h-3.5 w-3.5" />
+                      View Log
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Basic Information */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      Item Details
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Package className="h-4 w-4 text-blue-500" />
+                      Identification
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     <div>
-                      <Label className="text-sm font-medium">Name</Label>
-                      <p className="text-sm">{item.name}</p>
+                      <Label className="text-[10px] uppercase text-muted-foreground">Product Name</Label>
+                      <p className="text-sm font-semibold">{item.name}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">SKU</Label>
-                      <p className="text-sm font-mono">{item.sku}</p>
+                      <Label className="text-[10px] uppercase text-muted-foreground">SKU Code</Label>
+                      <p className="text-sm font-mono bg-muted/50 px-2 py-1 rounded inline-block">{item.sku}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium">Description</Label>
-                      <p className="text-sm text-muted-foreground">{item.description || "No description"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Status</Label>
+                      <Label className="text-[10px] uppercase text-muted-foreground">Status</Label>
                       <div className="mt-1">{getStatusBadge(item.quantity, item.minimumStock)}</div>
                     </div>
                   </CardContent>
@@ -226,66 +326,75 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
 
                 {/* Stock Information */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Stock Information
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                      Inventory Levels
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium">Current Quantity</Label>
-                      <p className="text-2xl font-bold">
-                        {item.quantity} {item.unit}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Minimum Stock</Label>
-                      <p className="text-sm">
-                        {item.minimumStock} {item.unit}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Unit Cost</Label>
-                      <p className="text-sm">${item.cost}</p>
-                    </div>
-                    {item.price && (
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between items-end">
                       <div>
-                        <Label className="text-sm font-medium">Unit Price</Label>
-                        <p className="text-sm">${item.price}</p>
+                        <Label className="text-[10px] uppercase text-muted-foreground">On Hand</Label>
+                        <p className="text-2xl font-black text-blue-600">
+                          {item.quantity} <span className="text-xs text-muted-foreground font-normal">{item.unit}</span>
+                        </p>
                       </div>
-                    )}
+                      <div className="text-right">
+                        <Label className="text-[10px] uppercase text-muted-foreground">Safety Stock</Label>
+                        <p className="text-sm font-bold text-orange-600">
+                          {item.minimumStock} {item.unit}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      <div>
+                        <Label className="text-[10px] uppercase text-muted-foreground">Unit Cost</Label>
+                        <p className="text-sm font-semibold text-emerald-600">${item.cost}</p>
+                      </div>
+                      {item.price && (
+                        <div>
+                          <Label className="text-[10px] uppercase text-muted-foreground">MSRP</Label>
+                          <p className="text-sm font-semibold text-blue-600">${item.price}</p>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
-                {/* Location & Supplier */}
+                {/* Logistics */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Location & Details
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-red-500" />
+                      Warehouse Logistics
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3">
                     <div>
-                      <Label className="text-sm font-medium">Location</Label>
-                      <p className="text-sm">
-                        {item.location?.code} - {item.location?.zone}
-                      </p>
+                      <Label className="text-[10px] uppercase text-muted-foreground">Storage Location</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="font-mono">
+                          {item.location?.code || "UNASSIGNED"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{item.location?.zone}</span>
+                      </div>
                     </div>
                     {item.supplier && (
                       <div>
-                        <Label className="text-sm font-medium">Supplier</Label>
-                        <p className="text-sm">{item.supplier.name}</p>
+                        <Label className="text-[10px] uppercase text-muted-foreground">Primary Supplier</Label>
+                        <p className="text-sm font-medium">{item.supplier.name}</p>
                       </div>
                     )}
-                    <div>
-                      <Label className="text-sm font-medium">Created</Label>
-                      <p className="text-sm">{item?.createdAt ? format(new Date(item.createdAt), "PPpp") : "—"}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Last Updated</Label>
-                      <p className="text-sm">{item?.updatedAt ? format(new Date(item.updatedAt), "PPpp") : "—"}</p>
+                    <div className="pt-2 border-t flex justify-between">
+                      <div>
+                        <Label className="text-[10px] uppercase text-muted-foreground">Last Received</Label>
+                        <p className="text-[11px]">{stats.lastReceived ? format(new Date(stats.lastReceived), "MMM dd, yyyy") : "Never"}</p>
+                      </div>
+                      <div className="text-right">
+                        <Label className="text-[10px] uppercase text-muted-foreground">Last Order</Label>
+                        <p className="text-[11px]">{stats.lastUsed ? format(new Date(stats.lastUsed), "MMM dd, yyyy") : "Never"}</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -293,26 +402,26 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
 
               {/* Quick Stats */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Quick Statistics</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">30-Day Operational Velocity</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{stats.totalReceived}</p>
-                      <p className="text-sm text-muted-foreground">Total Received</p>
+                    <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800">
+                      <p className="text-xl font-black text-green-600">{stats.totalReceived || 0}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground font-bold">Inbound Volume</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-red-600">{stats.totalUsed}</p>
-                      <p className="text-sm text-muted-foreground">Total Used</p>
+                    <div className="text-center p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800">
+                      <p className="text-xl font-black text-red-600">{stats.totalUsed || 0}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground font-bold">Outbound Volume</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{stats.totalAdjustments}</p>
-                      <p className="text-sm text-muted-foreground">Adjustments</p>
+                    <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800">
+                      <p className="text-xl font-black text-blue-600">{getEstimatedStockout()}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground font-bold">Est. Runway</p>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold">${stats.averageCost}</p>
-                      <p className="text-sm text-muted-foreground">Avg Cost</p>
+                    <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800">
+                      <p className="text-xl font-black text-purple-600">${stats.averageCost || item.cost}</p>
+                      <p className="text-[10px] uppercase text-muted-foreground font-bold">Weighted Cost</p>
                     </div>
                   </div>
                 </CardContent>
@@ -424,68 +533,63 @@ export default function AdvancedInventoryModal({ item, isOpen, onClose, onUpdate
             </TabsContent>
 
             <TabsContent value="history" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Receiving History */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Truck className="h-4 w-4" />
-                      Receiving History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 max-h-64 overflow-auto">
-                      {history.receiving.map((record) => (
-                        <div key={record.id} className="border-l-2 border-green-500 pl-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">
-                                +{record.quantity} {item.unit}
-                              </p>
-                              <p className="text-sm text-muted-foreground">PO: {record.purchaseOrder?.poNumber}</p>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(record.receivedDate), "MMM dd")}
-                            </p>
-                          </div>
-                          {record.notes && <p className="text-xs text-muted-foreground mt-1">{record.notes}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Usage History */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Factory className="h-4 w-4" />
-                      Usage History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 max-h-64 overflow-auto">
-                      {history.usage.map((record) => (
-                        <div key={record.id} className="border-l-2 border-red-500 pl-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">
-                                -{record.shipped} {item.unit}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Received By: {record.salesOrder?.customer?.name}
-                              </p>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(record.salesOrder?.shipDate), "MMM dd")}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5 text-blue-500" />
+                    Unified Transaction Timeline
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-[500px] overflow-auto">
+                    <Table>
+                      <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                        <TableRow>
+                          <TableHead>Event Type</TableHead>
+                          <TableHead>Activity Details</TableHead>
+                          <TableHead className="text-right">Quantity Change</TableHead>
+                          <TableHead className="text-right">Balance After</TableHead>
+                          <TableHead className="text-right">Timestamp</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {timelineEvents.map((event, idx) => (
+                          <TableRow key={idx} className="hover:bg-muted/30">
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {event.eventType === 'ADJUSTMENT' && getAdjustmentIcon(event.type)}
+                                {event.eventType === 'RECEIVING' && <Truck className="h-4 w-4 text-green-500" />}
+                                {event.eventType === 'USAGE' && <TrendingDown className="h-4 w-4 text-red-500" />}
+                                <span className="text-xs font-bold uppercase">{event.eventType}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">
+                                  {event.reason || event.purchaseOrder?.poNumber || event.salesOrder?.customer?.name || "Inventory Update"}
+                                </span>
+                                {event.reference && <span className="text-[10px] text-muted-foreground">Ref: {event.reference}</span>}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className={`font-bold ${event.quantity > 0 || event.eventType === 'RECEIVING' ? "text-green-600" : "text-red-600"}`}>
+                                {(event.quantity > 0 || event.eventType === 'RECEIVING') ? "+" : ""}
+                                {event.quantity || (event.eventType === 'USAGE' ? -event.shipped : event.shipped)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-bold">
+                              {event.balanceAfter || "—"}
+                            </TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                              {format(event.date, "MMM dd, HH:mm")}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">

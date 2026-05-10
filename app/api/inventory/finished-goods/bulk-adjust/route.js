@@ -86,7 +86,7 @@ export async function POST(request) {
           )
         }
 
-        const qty = parseInt(quantity, 10)
+        const qty = Math.abs(parseInt(quantity, 10))
         if (isNaN(qty) || qty <= 0) {
           return NextResponse.json(
             { error: `Invalid quantity for item ${id}` },
@@ -117,7 +117,7 @@ export async function POST(request) {
           prisma.inventoryAdjustment.create({
             data: {
               type,
-              quantity: qty,
+              quantity: type === "INCREASE" ? qty : -qty,
               balanceAfter: updateData.quantity,
               reason: reason.trim(),
               reference: reference || `Bulk adjustment ${new Date().toISOString()}`,

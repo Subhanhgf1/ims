@@ -58,7 +58,7 @@ export async function POST(request) {
           return NextResponse.json({ error: `Reason is required for item ${id}` }, { status: 400 })
         }
 
-        const qty = parseInt(quantity, 10)
+        const qty = Math.abs(parseInt(quantity, 10))
         let newQuantity = item.quantity
         if (type === "INCREASE") {
           newQuantity += qty
@@ -74,7 +74,7 @@ export async function POST(request) {
           prisma.inventoryAdjustment.create({
             data: {
               type,
-              quantity: qty,
+              quantity: type === "INCREASE" ? qty : -qty,
               balanceAfter: newQuantity,
               reason: reason.trim(),
               reference: reference || `Bulk adjustment ${new Date().toISOString()}`,

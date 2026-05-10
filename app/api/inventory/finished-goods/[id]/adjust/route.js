@@ -21,11 +21,12 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 })
     }
 
+    const qty = Math.abs(quantity)
     let newQuantity = item.quantity
     if (type === "INCREASE") {
-      newQuantity += quantity
+      newQuantity += qty
     } else if (type === "DECREASE") {
-      newQuantity -= quantity
+      newQuantity -= qty
       if (newQuantity < 0) {
         return NextResponse.json({ error: "Insufficient stock for decrease adjustment" }, { status: 400 })
       }
@@ -40,7 +41,7 @@ export async function POST(request, { params }) {
       prisma.inventoryAdjustment.create({
         data: {
           type,
-          quantity,
+          quantity: type === "INCREASE" ? qty : -qty,
           balanceAfter: newQuantity,
           reason,
           reference,

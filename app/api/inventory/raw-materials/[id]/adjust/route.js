@@ -15,7 +15,7 @@ export async function POST(request, { params }) {
       )
     }
 
-    const qty = Number(quantity)
+    const qty = Math.abs(Number(quantity))
     if (isNaN(qty) || qty <= 0) {
       return NextResponse.json(
         { error: "Quantity must be a positive number" },
@@ -57,7 +57,7 @@ export async function POST(request, { params }) {
         const adjustment = await tx.inventoryAdjustment.create({
           data: {
             type,
-            quantity: qty,
+            quantity: type === "INCREASE" ? qty : -qty,
             balanceAfter: newQuantity,
             reason,
             reference,
