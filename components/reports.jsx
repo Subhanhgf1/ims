@@ -135,7 +135,7 @@ export default function Reports() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics?.avgReturnTime.toFixed(1)} hrs</div>
+            <div className="text-2xl font-bold">{metrics?.avgReturnTime?.toFixed(1) ?? "0.0"} hrs</div>
             <p className="text-xs text-muted-foreground mt-1">
               From arrival to completed restock
             </p>
@@ -148,7 +148,7 @@ export default function Reports() {
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics?.inboundOnTimeRate}%</div>
+            <div className="text-2xl font-bold">{metrics?.inboundOnTimeRate ?? 0}%</div>
             <p className="text-xs text-green-600 flex items-center mt-1">
               Compared to expected dates
             </p>
@@ -161,7 +161,7 @@ export default function Reports() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics?.teamThroughput}</div>
+            <div className="text-2xl font-bold">{metrics?.teamThroughput ?? 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Combined team activity
             </p>
@@ -174,7 +174,7 @@ export default function Reports() {
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics?.avgInboundTime.toFixed(1)} hrs</div>
+            <div className="text-2xl font-bold">{metrics?.avgInboundTime?.toFixed(1) ?? "0.0"} hrs</div>
             <p className="text-xs text-muted-foreground mt-1">
               Time to scan and locate stock
             </p>
@@ -237,7 +237,7 @@ export default function Reports() {
             </div>
             <div className="w-full mt-4 space-y-2">
               <p className="text-sm font-medium text-center text-muted-foreground italic">
-                Team is spending {Math.round((distribution?.[2]?.value / metrics?.teamThroughput) * 100 || 0)}% of time on Returns
+                Team is spending {Math.round((distribution?.[2]?.value / (metrics?.teamThroughput || 1)) * 100 || 0)}% of time on Returns
               </p>
             </div>
           </CardContent>
@@ -294,7 +294,7 @@ export default function Reports() {
                 Inbound Efficiency
               </h4>
               <p className="text-sm text-blue-700/80 dark:text-blue-400/80 mt-1">
-                Your team takes an average of {metrics?.avgInboundTime.toFixed(1)} hours to move items from the loading dock to their assigned shelves.
+                Your team takes an average of {metrics?.avgInboundTime?.toFixed(1) ?? "0.0"} hours to move items from the loading dock to their assigned shelves.
               </p>
             </div>
             <div className="p-4 rounded-lg bg-green-50 border border-green-100 dark:bg-green-900/10 dark:border-green-800">
@@ -303,7 +303,7 @@ export default function Reports() {
                 Supplier Health
               </h4>
               <p className="text-sm text-green-700/80 dark:text-green-400/80 mt-1">
-                {metrics?.inboundOnTimeRate}% of your inbound shipments arrived on time. {supplierPerformance?.[0]?.name || 'N/A'} is your most reliable supplier.
+                {metrics?.inboundOnTimeRate ?? 0}% of your inbound shipments arrived on time. {supplierPerformance?.[0]?.name || 'N/A'} is your most reliable supplier.
               </p>
             </div>
             <div className="p-4 rounded-lg bg-orange-50 border border-orange-100 dark:bg-orange-900/10 dark:border-orange-800">
@@ -312,7 +312,7 @@ export default function Reports() {
                 Return Handling
               </h4>
               <p className="text-sm text-orange-700/80 dark:text-orange-400/80 mt-1">
-                Return processing speed is currently at {metrics?.avgReturnTime.toFixed(1)} hours per parcel. This accounts for {Math.round((distribution?.[2]?.value / metrics?.teamThroughput) * 100 || 0)}% of logistics workload.
+                Return processing speed is currently at {metrics?.avgReturnTime?.toFixed(1) ?? "0.0"} hours per parcel. This accounts for {Math.round((distribution?.[2]?.value / (metrics?.teamThroughput || 1)) * 100 || 0)}% of logistics workload.
               </p>
             </div>
           </CardContent>
@@ -485,10 +485,10 @@ export default function Reports() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data?.itemUsage?.filter(item => 
+                {(data?.itemUsage?.filter(item => 
                   item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                   item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-                ).length > 0 ? (
+                ).length ?? 0) > 0 ? (
                   data.itemUsage
                     .filter(item => 
                       item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -516,7 +516,7 @@ export default function Reports() {
                     ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                       No items found.
                     </TableCell>
                   </TableRow>

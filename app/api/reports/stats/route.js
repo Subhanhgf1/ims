@@ -120,7 +120,7 @@ export async function GET(request) {
       .slice(0, 5)
 
     // 7. Item Usage Data
-    const [salesItems, receivingRecords, returnItems] = await Promise.all([
+    const [salesItems, receivingRecords, returnItems, inventoryAdjustments] = await Promise.all([
       prisma.salesOrderItem.findMany({
         where: { salesOrder: { status: { in: ["SHIPPED", "DELIVERED"] }, updatedAt: { gte: startDate } } },
         include: { finishedGood: true, rawMaterial: true }
