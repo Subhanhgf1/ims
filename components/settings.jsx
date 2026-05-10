@@ -671,6 +671,22 @@ export default function Settings() {
                   onCheckedChange={(checked) => setSystemPreferences((prev) => ({ ...prev, barcodeScanning: checked }))}
                 />
               </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Default Stock Maintenance Days</Label>
+                  <p className="text-sm text-muted-foreground">Target days of inventory to maintain for reordering</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    className="w-20 h-9"
+                    value={systemPreferences.stockMaintenanceDays || 9}
+                    onChange={(e) => setSystemPreferences((prev) => ({ ...prev, stockMaintenanceDays: parseInt(e.target.value) || 0 }))}
+                  />
+                  <Badge variant="outline">Days</Badge>
+                </div>
+              </div>
               <Button type="submit" disabled={submitting}>
                 {submitting ? (
                   <>

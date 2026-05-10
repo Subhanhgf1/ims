@@ -42,11 +42,12 @@ async function handleReplenish(request) {
 
     // ── PHASE 1: Smart Minimum Stock Recalculation ──────────────────────────
     // Before creating any orders, recompute each item's minimumStock using
-    // recent sales velocity (last 5 days) adjusted by a 30-day trend multiplier.
-    // Target: 9 days of safety stock. New value is persisted only if it is
-    // higher than the currently stored minimum (never reduces the floor).
-
-    const SMART_TARGET_DAYS = 9   // safety stock buffer in days
+    // recent sales velocity (last 3 days) adjusted by a 30-day trend baseline.
+    
+    // Fetch global settings
+    const prefs = await prisma.systemPreferences.findFirst()
+    const SMART_TARGET_DAYS = prefs?.stockMaintenanceDays || 9
+    
     const RECENT_DAYS = 3         // short window for current velocity
     const TREND_DAYS = 30         // longer window for trend baseline
 

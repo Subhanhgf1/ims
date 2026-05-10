@@ -21,7 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Calculator, Save, AlertCircle, TrendingUp } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Loader2, Calculator, Save, AlertCircle, TrendingUp, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth"
 
@@ -32,7 +33,8 @@ export default function SmartMinStockModal({
   onUpdate,
 }) {
   const [lookbackDays, setLookbackDays] = useState(30)
-  const [targetDays, setTargetDays] = useState(7)
+  const [targetDays, setTargetDays] = useState(9)
+  const [useAdvanced, setUseAdvanced] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [suggestions, setSuggestions] = useState([])
@@ -40,6 +42,16 @@ export default function SmartMinStockModal({
   
   const { toast } = useToast()
   const { user } = useAuth()
+  
+  useState(() => {
+    // Fetch default maintenance days from settings
+    fetch("/api/settings/preferences")
+      .then(res => res.json())
+      .then(data => {
+        if (data.stockMaintenanceDays) setTargetDays(data.stockMaintenanceDays)
+      })
+      .catch(() => {})
+  }, [])
 
   const calculateSuggestions = async () => {
     setLoading(true)
@@ -51,6 +63,7 @@ export default function SmartMinStockModal({
           ids: selectedIds,
           lookbackDays: parseInt(lookbackDays),
           targetDays: parseInt(targetDays),
+          advanced: useAdvanced,
         }),
       })
 
@@ -159,6 +172,22 @@ export default function SmartMinStockModal({
             </div>
             <p className="text-[10px] text-muted-foreground">Target days of inventory to keep in stock.</p>
           </div>
+        </div>
+
+        <div className="mx-4 mt-4 p-4 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Advanced Reactive Algorithm</p>
+              <p className="text-xs text-muted-foreground">Sensitive to recent 3-day surges to prevent stockouts.</p>
+            </div>
+          </div>
+          <Switch 
+            checked={useAdvanced} 
+            onCheckedChange={setUseAdvanced} 
+          />
         </div>
 
         <div className="flex justify-center py-2">

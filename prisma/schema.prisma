@@ -385,6 +385,7 @@ model SystemPreferences {
   lowStockAlerts       Boolean  @default(true)
   qualityCheckRequired Boolean  @default(true)
   barcodeScanning      Boolean  @default(false)
+  stockMaintenanceDays Int      @default(9)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

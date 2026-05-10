@@ -29,18 +29,18 @@ export async function GET() {
 export async function PUT(request) {
   try {
     const data = await request.json()
-    const { autoGenerateSKU, lowStockAlerts, qualityCheckRequired, barcodeScanning } = data
+    const { autoGenerateSKU, lowStockAlerts, qualityCheckRequired, barcodeScanning, stockMaintenanceDays } = data
 
     let preferences = await prisma.systemPreferences.findFirst()
 
     if (preferences) {
       preferences = await prisma.systemPreferences.update({
         where: { id: preferences.id },
-        data: { autoGenerateSKU, lowStockAlerts, qualityCheckRequired, barcodeScanning },
+        data: { autoGenerateSKU, lowStockAlerts, qualityCheckRequired, barcodeScanning, stockMaintenanceDays },
       })
     } else {
       preferences = await prisma.systemPreferences.create({
-        data: { autoGenerateSKU, lowStockAlerts, qualityCheckRequired, barcodeScanning },
+        data: { autoGenerateSKU, lowStockAlerts, qualityCheckRequired, barcodeScanning, stockMaintenanceDays },
       })
     }
 
