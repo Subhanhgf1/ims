@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/inventory/finished-goods/auto-replenish-boxes",
-      "schedule": "0 6 * * 6"
+      "schedule": "0 6 1,16 * *"
     }
   ]
 }
