@@ -337,7 +337,17 @@ const generateShippingReport = async (orderId) => {
 
   const handleShipOrder = async (e) => {
     e.preventDefault()
-    if (!shipData.length) return
+
+    // Validate that at least one item has a positive shippedQuantity
+    const hasItemsToShip = shipData.some((d) => Number(d.shippedQuantity) > 0)
+    if (!shipData.length || !hasItemsToShip) {
+      toast({
+        title: "Nothing to Ship",
+        description: "Please enter a quantity greater than 0 for at least one item.",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
       setSubmitting(true)
@@ -1382,41 +1392,68 @@ const generateShippingReport = async (orderId) => {
           </DialogHeader>
           <form onSubmit={handleShipOrder}>
             <div className="grid gap-4 py-4 max-h-[50vh] overflow-y-auto">
-              {selectedOrder?.items?.map((item, index) => (
-                <div key={item.id} className="grid grid-cols-3 gap-4 items-center p-2 border rounded">
-                  <div>
-                    <Label className="text-sm font-medium">{item.finishedGood?.name || item.rawMaterial?.name}</Label>
-                    <p className="text-xs text-muted-foreground">
-                      {activeTab === "sales-orders" ? (
-                        <>
-                          Ordered: {item.quantity} | Shipped: {item.shipped || 0}
-                        </>
+              {selectedOrder?.items?.map((item, index) => {
+                const remaining = activeTab === "sales-orders"
+                  ? Math.max(0, item.quantity - (item.shipped || 0))
+                  : item.quantity
+                const isFullyShipped = activeTab === "sales-orders" && remaining === 0
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`grid grid-cols-3 gap-4 items-center p-2 border rounded ${
+                      isFullyShipped ? "opacity-50 bg-gray-50" : ""
+                    }`}
+                  >
+                    <div>
+                      <Label className="text-sm font-medium">
+                        {item.finishedGood?.name || item.rawMaterial?.name}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {activeTab === "sales-orders" ? (
+                          <>
+                            Ordered: {item.quantity} | Shipped: {item.shipped || 0}
+                          </>
+                        ) : (
+                          <>Quantity: {item.quantity}</>
+                        )}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Ship Quantity</Label>
+                      {isFullyShipped ? (
+                        <p className="text-xs text-green-600 font-medium mt-1">✅ Fully shipped</p>
                       ) : (
-                        <>Quantity: {item.quantity}</>
+                        <Input
+                          type="number"
+                          min="0"
+                          onKeyDown={(e) => {
+                            if (e.key === '-' || e.key === 'e') e.preventDefault()
+                          }}
+                          value={shipData[index]?.shippedQuantity ?? ""}
+                          onChange={(e) =>
+                            setShipData((prev) =>
+                              prev.map((data, i) =>
+                                i === index ? { ...data, shippedQuantity: e.target.value } : data
+                              )
+                            )
+                          }
+                          max={remaining}
+                          className="h-8"
+                        />
                       )}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Ship Quantity</Label>
-                    <Input
-                      type="number"
-                      value={shipData[index]?.shippedQuantity || ""}
-                      onChange={(e) =>
-                        setShipData((prev) =>
-                          prev.map((data, i) => (i === index ? { ...data, shippedQuantity: e.target.value } : data)),
-                        )
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {isFullyShipped
+                        ? <span className="text-green-600">Done</span>
+                        : activeTab === "sales-orders"
+                          ? `Remaining: ${remaining}`
+                          : `Available: ${item.quantity}`
                       }
-                      max={activeTab === "sales-orders" ? item.quantity - (item.shipped || 0) : item.quantity}
-                      className="h-8"
-                    />
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {activeTab === "sales-orders"
-                      ? `Remaining: ${item.quantity - (item.shipped || 0)}`
-                      : `Available: ${item.quantity}`}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsShipDialogOpen(false)}>

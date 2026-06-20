@@ -40,9 +40,6 @@ export async function POST(request, { params }) {
     // Transaction
     const result = await prisma.$transaction(async (tx) => {
       const shippedSummary = []
-      const itemUpdates = []
-      const finishedGoodUpdates = []
-      const rawMaterialUpdates = []
       const adjustments = []
 
       for (const shippedItem of items) {
@@ -54,13 +51,13 @@ export async function POST(request, { params }) {
 
         const newShippedTotal = (orderItem.shipped || 0) + shippedQty
 
-        // Update shipped quantity
-        itemUpdates.push(
-          tx.salesOrderItem.update({
-            where: { id: shippedItem.itemId },
-            data: { shipped: { increment: shippedQty } },
-          })
-        )
+        // ✅ FIX 1: Await shipped count update immediately (not deferred)
+        // Previously this was pushed to itemUpdates[] and batched later, causing
+        // a race condition where inventory was committed but shipped stayed at 0
+        await tx.salesOrderItem.update({
+          where: { id: shippedItem.itemId },
+          data: { shipped: { increment: shippedQty } },
+        })
 
         // Deduct inventory
         let newBalance = 0;
@@ -78,10 +75,11 @@ export async function POST(request, { params }) {
           newBalance = updatedRm.quantity;
         }
 
-        // Inventory adjustment log
+        // ✅ FIX 2: Store positive quantity for DECREASE type (was -shippedQty which
+        // violated the Int constraint and caused the whole transaction to rollback)
         const adjustment = {
           type: "DECREASE",
-          quantity: -shippedQty,
+          quantity: shippedQty,
           balanceAfter: newBalance,
           reason: `Sales order ${salesOrder.soNumber} shipped`,
           reference: salesOrder.soNumber,
@@ -111,11 +109,6 @@ export async function POST(request, { params }) {
           totalShipped: newShippedTotal,
         })
       }
-
-      // Execute all updates in batch
-      await Promise.all([
-        ...itemUpdates,
-      ])
 
       if (adjustments.length > 0) {
         await tx.inventoryAdjustment.createMany({ data: adjustments })
