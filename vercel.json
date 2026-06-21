@@ -8,5 +8,10 @@
       "path": "/api/inventory/finished-goods/auto-replenish-boxes",
       "schedule": "0 6 1,16 * *"
     }
+    ,
+    {
+      "path": "/api/inventory/finished-goods/auto-liquidate",
+      "schedule": "0 6 1 * *"
+    }
   ]
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { generatePONumber, generateSONumber } from "@/lib/utils"
+import { generatePONumber } from "@/lib/utils"
 import { addDays, startOfDay, subDays } from "date-fns"
 
 export const dynamic = "force-dynamic"
@@ -266,81 +266,11 @@ async function handleReplenish(request) {
       })
     }
 
-    // ── PHASE 6: Overstock Liquidation (Outbound) ──────────────────────────
-    // Identify items where current quantity exceeds their defined maxStockLevel.
-    // Create a Sales Order for the Warehouse customer to pull the excess.
-
-    const itemsToLiquidate = finishedGoods
-      .map((item) => {
-        // Use explicit maxStockLevel from settings if available
-        let maxLevel = item.inventorySettings?.maxStockLevel
-        
-        // Fallback: If no explicit max stock is set, use 1.5x the current minimumStock (safety floor)
-        // This makes the system reactive to items that have high stock but zero/low sales velocity.
-        if (!maxLevel || maxLevel <= 0) {
-          maxLevel = (item.minimumStock || 0) * 1.5
-        }
-        
-        // Ensure we have a valid max level and we are actually above it
-        if (maxLevel < 0) return null
-        
-        const excess = item.quantity - maxLevel
-        if (excess <= 0) return null
-
-        return {
-          id: item.id,
-          name: item.name,
-          sku: item.sku,
-          quantity: Math.floor(excess),
-          unitPrice: item.price || 0,
-        }
-      })
-      .filter(Boolean)
-
-    const createdSalesOrders = []
-    if (itemsToLiquidate.length > 0) {
-      const soNumber = generateSONumber()
-      const totalValue = itemsToLiquidate.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
-      const pktNow = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Karachi" }))
-      const shipDate = addDays(startOfDay(pktNow), 1) // 24 hours later
-
-      const salesOrder = await prisma.salesOrder.create({
-        data: {
-          soNumber,
-          customerId: OVERSTOCK_CUSTOMER_ID,
-          shipDate,
-          totalValue,
-          createdById: userId,
-          notes: `Automated overstock liquidation to warehouse.`,
-          items: {
-            create: itemsToLiquidate.map((item) => ({
-              finishedGoodId: item.id,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.quantity * item.unitPrice,
-            })),
-          },
-        },
-      })
-      
-      createdSalesOrders.push({
-        soNumber: salesOrder.soNumber,
-        itemCount: itemsToLiquidate.length,
-        totalValue: salesOrder.totalValue,
-        shipDate: salesOrder.shipDate
-      })
-    }
-    // ────────────────────────────────────────────────────────────────────────
-
     return NextResponse.json({
-      message: itemsToLiquidate.length > 0 
-        ? "Smart replenishment and overstock liquidation complete" 
-        : "Smart replenishment complete",
+      message: "Smart replenishment complete",
       smartMinUpdates: minStockUpdates.length,
       orders: createdOrders,
-      salesOrders: createdSalesOrders,
       totalOrderValue: createdOrders.reduce((sum, o) => sum + o.totalValue, 0),
-      totalLiquidationValue: createdSalesOrders.reduce((sum, o) => sum + o.totalValue, 0),
     })
   } catch (error) {
     console.error("Error in auto-replenish:", error)
