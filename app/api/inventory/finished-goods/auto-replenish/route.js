@@ -132,17 +132,17 @@ async function handleReplenish(request) {
 
     // Persist updated minimums to DB
     if (minStockUpdates.length > 0) {
-      await Promise.all(
-        minStockUpdates.map(({ id, newMin, newDailyAvg }) =>
-          prisma.finishedGood.update({
+      await prisma.$transaction(async (tx) => {
+        for (const { id, newMin, newDailyAvg } of minStockUpdates) {
+          await tx.finishedGood.update({
             where: { id },
             data: {
               minimumStock:     newMin,
               dailyConsumption: parseFloat(newDailyAvg.toFixed(4)),
             },
           })
-        )
-      )
+        }
+      })
 
       // Mirror the new values into the in-memory list so ordering uses them
       const updateMap = new Map(minStockUpdates.map(u => [u.id, u]))

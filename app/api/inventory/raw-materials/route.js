@@ -31,26 +31,24 @@ export async function GET(request) {
     })
 
     // Update stock status based on quantity
-    const updatedMaterials = await Promise.all(
-      rawMaterials.map(async (material) => {
-        let newStatus = "IN_STOCK"
-        if (material.quantity === 0) {
-          newStatus = "OUT_OF_STOCK"
-        } else if (material.quantity <= material.minimumStock) {
-          newStatus = "LOW_STOCK"
-        }
+    const updatedMaterials = []
+    for (const material of rawMaterials) {
+      let newStatus = "IN_STOCK"
+      if (material.quantity === 0) {
+        newStatus = "OUT_OF_STOCK"
+      } else if (material.quantity <= material.minimumStock) {
+        newStatus = "LOW_STOCK"
+      }
 
-        if (material.status !== newStatus) {
-          await prisma.rawMaterial.update({
-            where: { id: material.id },
-            data: { status: newStatus },
-          })
-          material.status = newStatus
-        }
-
-        return material
-      }),
-    )
+      if (material.status !== newStatus) {
+        await prisma.rawMaterial.update({
+          where: { id: material.id },
+          data: { status: newStatus },
+        })
+        material.status = newStatus
+      }
+      updatedMaterials.push(material)
+    }
 
     return NextResponse.json(updatedMaterials)
   } catch (error) {
